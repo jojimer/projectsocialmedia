@@ -1,0 +1,70 @@
+// app global css in Sass form
+.constrain
+    max-width: 1280px
+    margin: 0 auto
+
+.left-drawer
+    position: fixed
+    height: 100vh
+    top: 0
+
+.right-drawer
+    z-index: 3
+    position: absolute
+    right: 0
+    top: 0
+    height: 100%
+
+.relative-p
+    position: relative!important
+
+aside.q-drawer--right
+    position: absolute
+
+div.u-list-nav
+    width: 80%
+    margin: 0 auto
+
+div.u-list-nav .q-focus-helper
+    border-radius: 50px
+
+//PRE POST PLAYER
+div.u-media-player div.q-media__controls--row:nth-child(2) > button,
+div.u-media-player div.q-media__controls--row:nth-child(2) div[role=slider]
+    display: none
+
+div.u-media-player div.q-media__controls
+    display: flex
+    padding: 10px
+    height: 60px !important
+
+div.u-media-player div.q-media__controls--row:nth-child(2)
+    flex: auto
+
+//POST MEDIA PLAYER
+div.u-post-media-player
+    width: 100%
+    height: 120px!important
+
+div.u-post-media-player div.q-media__controls--row:nth-child(2)
+    justify-content: flex-end
+
+div.u-post-media-player div.q-media__controls--row:nth-child(2) > div > button
+    margin-right: 10px
+
+div.u-post-media-player div.q-media__controls--row:nth-child(2) > button
+    position: absolute
+    left: 0
+
+div.u-post-media-player div.q-media__controls--row:nth-child(2) div[role=slider]
+    position: absolute
+    left: 30px
+
+//Active Recording Button
+button.u-message-control span.q-btn__content, button.u-message-control span.absolute-full
+    justify-content: flex-end!important
+
+button.u-message-control span.absolute-full i
+    padding-left: 16px
+    padding-right: 19.99px
+    cursor: pointer
