@@ -1,12 +1,12 @@
 <template>
-    <div class="u-all-post-box q-py-sm q-mb-md">
-        <div class="u-audio-post-box q-ma-none q-py-md" v-for="(post, index) in this.$props.posts" :key="post.user.name+'-'+post.postID">
+    <div v-if="this.$props.posts.length > 0" class="u-all-post-box q-py-sm q-mb-md">
+        <div class="u-audio-post-box q-ma-none q-pt-md" v-for="(post, index) in this.$props.posts" :key="post.user.name+'-'+post.postID">
             <div class="q-pa-sm q-mb-none row">
                 <q-avatar class="q-ml-md q-mt-md">
                     <img :src="post.user.avatar">
                 </q-avatar>
                 <div class="u-user-name-handle col-7">
-                    <div class="text-subtitle2 text-bold text-primary">{{post.user.name}}</div>
+                    <router-link class="text-subtitle2 text-bold text-primary" :to="'/profile?u='+post.user.handle.substring(1)">{{post.user.name}}</router-link>
                     <div class="text-subtitle2 text-grey-8 text-weight-regular">{{post.user.handle}}</div>
                 </div>
                 <div class="text-subtitle2 text-grey col-3 u-post-date text-right">
@@ -31,7 +31,33 @@
                     {{user.handle}}
                 </q-chip>
             </div>
+            <div class="u-post-action q-mt-lg">
+                <q-btn-group flat spread>
+                    <q-btn
+                        class="q-py-sm u-like-react"
+                        color="grey-5"
+                        icon="far fa-heart"
+                        flat
+                    />
+                    <q-btn
+                        class="q-py-sm u-comment"
+                        color="grey-5"
+                        icon="far fa-comment-alt"
+                        label="Reply"
+                        flat
+                    />
+                    <q-btn
+                        class="q-py-sm u-repost"
+                        color="grey-5"
+                        icon="fas fa-retweet"
+                        flat
+                    />
+                </q-btn-group>
+            </div>
         </div>
+    </div>
+    <div v-else class="q-py-lg q-mb-md text-center text-grey-5">
+        <h6 class="text-weight-regular">No post available!</h6>
     </div>
 </template>
 
@@ -43,6 +69,7 @@ export default {
     data() {
         return {
             muted: true,
+            likeColor: []
         }
     },
     props: {
@@ -58,19 +85,7 @@ export default {
         }
     },
     created() {
-        
-        // let newPost = []
-        // this.posts = this.$props.preposts.map((post,index) => {
-        //     let user = this.$props.users.filter(user => user.id == post.userID)
-        //     post.mentionedUsers.map((id,index) => {
-        //         let userMention = this.$props.users.filter(user => user.id == id)
-        //         post.mentionedUsers[index] = userMention
-        //     })
-        //     post.user = user
-        //     newPost.push(post)
-        // })
-        // this.posts = newPost
-        //console.log(this.posts[0].mentionedUsers, this.posts[0].user[0].avatar)
+
     },
     filters: {
         niceDate(time) {
@@ -84,7 +99,7 @@ export default {
         background-color: $grey-1
 
     div.u-audio-post-box
-        height: 250px
+        height: 100%
         background-color: white
         border-top: .5px solid $grey-3
 
@@ -98,8 +113,9 @@ export default {
         position: relative
         top: 30px
 
-    div.u-user-name-handle div:first-child
+    div.u-user-name-handle a:first-child
         margin: 0 5px 0 10px
+        text-decoration: none
 
     div.u-post-mentioned
         display: flex
@@ -111,4 +127,13 @@ export default {
     div.u-post-date
         position: relative
         top: 30px
+
+    button.u-like-react:hover
+        color: $red-5!important
+
+    button.u-comment:hover
+        color: $primary!important
+
+    button.u-repost:hover
+        color: $green-5!important
 </style>

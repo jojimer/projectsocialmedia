@@ -1,6 +1,6 @@
 <template>
   <q-page>
-    <div class="u-post-box row q-pb-lg">
+    <div class="u-post-box row">
       <div class="col-12">
           <div class="u-msgbox-comp">             
               <q-avatar class="q-ml-md">
@@ -129,7 +129,7 @@
     
     <AudioPost
       :posts="realPost"
-      :users="dummyUser"
+      :users="dummyUser"      
     />
 
   </q-page>
@@ -139,11 +139,7 @@
 import InActiveBox from '../components/RecorderBox/InActiveRecorder'
 import ActiveBox from '../components/RecorderBox/ActiveRecorder'
 import AudioPlayer from '../components/AudioPlayer'
-import Localbase from 'localbase'
 import AudioPost from '../components/AudioPost'
-
-const db = new Localbase('db')
-db.config.debug = false
 
 export default {  
   name: 'PageIndex',
@@ -192,79 +188,15 @@ export default {
       searchMentionUser: '',
       mentionedUser: [],
       mentionOption: [],
-      currentUser: {},
-      audioPost: [],
-      dummyUser:[
-        {
-          id: '001',
-          name: 'Quintino Araújo',
-          handle: '@Quintino_Araújo',
-          email: 'quintino.araujo@example.com',
-          avatar: 'https://randomuser.me/api/portraits/men/53.jpg'
-        },
-        {
-          id: '002',
-          name: 'Nicole Jordan',
-          handle: '@Nicole_Jordan',
-          email: 'nicole.jordan@example.com',
-          avatar: 'https://randomuser.me/api/portraits/women/64.jpg'
-        },
-        {
-          id: '003',
-          name: 'Manuela Gil',
-          handle: '@Manuela_Gil',
-          email: 'manuela.gil@example.com',
-          avatar: 'https://randomuser.me/api/portraits/women/78.jpg'
-        },
-        {
-          id: '004',
-          name: 'Roy Brüning',
-          handle: '@Roy_Brüning',
-          email: 'roy.bruning@example.com',
-          avatar: 'https://randomuser.me/api/portraits/men/73.jpg'
-        },
-        {
-          id: '005',
-          name: 'Christina Rogers',
-          handle: '@Christina_Rogers',
-          email: 'christina.rogers@example.com',
-          avatar: 'https://randomuser.me/api/portraits/women/5.jpg'
-        },
-        {
-          id: '006',
-          name: 'Ronnie Welch',
-          handle: '@Ronnie_Welch',
-          email: 'ronnie.welch@example.com',
-          avatar: 'https://randomuser.me/api/portraits/men/35.jpg'
-        },
-      ],
-      dummyPost: [
-        {
-          postID: 1,
-          userID: '004',
-          user: [],
-          audio: {
-            src: 'https://raw.githubusercontent.com/quasarframework/quasar-ui-qmediaplayer/dev/demo/public/media/Scott_Holmes_-_04_-_Upbeat_Party.mp3',
-            type: 'audio/mpeg-3'
-          },
-          mentionedUsers: ['006','001','003'],
-          date: Date.now(),
-        },
-        {
-          postID: 2,
-          userID: '005',
-          user: [],
-          audio: {
-            src: 'https://raw.githubusercontent.com/quasarframework/quasar-ui-qmediaplayer/dev/demo/public/media/Scott_Holmes_-_04_-_Upbeat_Party.mp3',
-            type: 'audio/mpeg-3'
-          },
-          mentionedUsers: ['004','005','002'],
-          date: Date.now(),
-        }
-      ],
+      audioPost: [],      
       realPost: [],
-      posting: false
+      posting: false,
+      db: new this.$localbase('db')
     }    
+  },
+  props: {    
+      currentUser: Object,
+      dummyUser: Array,
   },
   components: {
     InActiveBox,
@@ -339,10 +271,10 @@ export default {
         //   }
         // })
     },
-    async resetRecording(){
-      this.posting = true
+    async resetRecording(val = true){      
       this.postMentionWrap = false
-      setTimeout(() => {
+      this.postViewerWrap = false
+      const reset = () => {
         this.audioPlayer = false
         this.currentTime = 0
         this.mentionedUser = []      
@@ -350,9 +282,16 @@ export default {
         this.postViewer = {
             icon: 'fas fa-globe-europe',
             text: 'Everyone'
-        }              
-        this.fetchPost()
-      },3000)
+        }    
+      }
+      if(val){
+        setTimeout(() => {
+          reset()    
+          this.fetchPost()
+        },3000)
+      }else{
+        reset()
+      }      
     },
     getTotalTime(time){
       this.maxLength = time
@@ -431,11 +370,14 @@ export default {
       }
     },
     async fetchPost() {
-      let localDBpostlist = await db.collection('audiopost').orderBy('date', 'desc').get()
+      let localDBpostlist = await this.db.collection('audiopost').orderBy('date', 'desc').get()
       this.realPost = await localDBpostlist
     },
     async submitAudioPost() {
+      this.posting = true
       let length = (this.AUdioFrom === 'recording') ? this.maxLength : 0
+      let newPostIDs = this.$props.currentUser.postIDs
+      let userKey = 'user-key'+this.$props.currentUser.id
       let obj = {
         postID: Math.random(),
         user: this.currentUser,
@@ -446,20 +388,19 @@ export default {
         viewer: this.postViewer,
         date: Date.now(),
       }      
-      await db.collection('audiopost').add(obj,'post-key'+obj.postID)
+      newPostIDs.push('post-key'+obj.postID)
+      console.log(newPostIDs)
+      await this.db.collection('audiopost').add(obj,'post-key'+obj.postID)
+      await this.db.collection('users').doc(userKey).update({postIDs: newPostIDs})
       await this.resetRecording()
-      
-          
-    },
-    pickRandomUser(n) {
-      this.currentUser = this.dummyUser[n]
-    }
+    },    
   },
-  mounted() {
-    //Select Random User
-    let n = Math.floor((Math.random() * 5))
-    this.pickRandomUser(n)    
+  mounted() {      
+    this.db.config.debug = false
     this.fetchPost()
+  },
+  created(){    
+      
   },
   beforeDestroy() {
     if(this.hasMicrophoneSupport) {
@@ -471,6 +412,8 @@ export default {
 <style scoped lang="sass">
   div.u-post-box
     border-bottom: .5px solid $grey-3
+    padding-top: 51px
+    padding-bottom: 24px
 
 
   div.u-msgbox-comp, div.u-message-box, div.u-message-control
@@ -502,4 +445,5 @@ export default {
   div.post-mention-card, div.post-viewer-card
     width: 280px
     z-index: 1
+
 </style>

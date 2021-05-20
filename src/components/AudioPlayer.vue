@@ -2,7 +2,7 @@
     <div class="u-audio-player q-pa-sm q-ml-md q-mr-lg" :style="!closeBTN ? 'border-radius:1rem' : ''">
         <audio :id="'audioPlayer'+uniqueID" class="hidden" :src="AudioSRC" controls preload="auto"></audio>
         <div class="u-audio-player-wrap">
-            <q-icon v-show="closeBTN" class="u-close-player" size="1.25rem" name="fas fa-times-circle" color="red-5" @click="$emit('close-player')" />
+            <q-icon v-show="closeBTN" class="u-close-player" size="1.25rem" name="fas fa-times-circle" color="red-5" @click="$emit('close-player',false)" />
             <span class="q-pl-md q-py-sm u-timer">{{runningTime}}</span>
             <q-slider
                 class="q-mx-md u-player-slider"

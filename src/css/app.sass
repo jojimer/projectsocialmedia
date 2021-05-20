@@ -25,8 +25,19 @@ div.u-list-nav
     width: 80%
     margin: 0 auto
 
-div.u-list-nav .q-focus-helper
+div.u-list-nav .u-link-rounded
     border-radius: 50px
+
+//TRANSITION EFFECTS
+.fade-enter-active,
+.fade-leave-active
+    transition-duration: 0.3s
+    transition-property: opacity
+    transition-timing-function: ease
+
+.fade-enter,
+.fade-leave-active
+    opacity: 0
 
 //PRE POST PLAYER
 div.u-media-player div.q-media__controls--row:nth-child(2) > button,
@@ -68,3 +79,9 @@ button.u-message-control span.absolute-full i
     padding-left: 16px
     padding-right: 19.99px
     cursor: pointer
+
+//Profile
+div.u-profile-avatar .u-profile-picture .q-img__image
+    border: 5px solid white
+    border-radius: 100%
+    box-shadow: rgb(0 0 0 / 2%) 0px 0px 2px inset

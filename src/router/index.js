@@ -1,6 +1,9 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import routes from './routes'
+import Localbase from 'localbase'
+
+Vue.prototype.$localbase = Localbase
 
 Vue.use(VueRouter)
 
