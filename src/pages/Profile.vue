@@ -9,7 +9,14 @@
 
         <q-card-section class="u-profile-avatar">
             <q-avatar size="8rem">
+                <q-icon
+                    v-if="user.avatar === ''"
+                    style="background-color:#f1f1f1;padding:1.8rem 2.5rem 2.5rem;"
+                    name="far fa-user"
+                    size="4rem"
+                />
                 <q-img
+                    v-else
                     height="8rem"
                     :src="user.avatar"
                     class="u-profile-picture"
@@ -99,7 +106,12 @@ export default {
             tab: 'posts',
             userIsViewing: false, 
             db: new this.$localbase('db'),
-            user: {},
+            user: {
+                avatar: '',
+                handle: '',
+                name: '',
+                postIDs: []
+            },
             userPosts: [],
             userLikes: [],
             transition: false
@@ -125,12 +137,12 @@ export default {
             }
             setTimeout(() => {
                 this.transition = false
-            },250)
+            },300)
         },
         async setUserPost() {
             let userPosts = this.user.postIDs.reverse()
             let posts = []
-            await userPosts.map(postID => {
+            userPosts.map(postID => {
                 this.db.collection('audiopost').doc(postID).get()
                     .then(result => {
                         posts.push(result)
@@ -144,14 +156,18 @@ export default {
     created() {
         
     },
-    mounted() {    
-        this.checkIfUserIsViewing()
+    mounted() {
         this.$emit('changeLink')
         this.db.config.debug = false
         this.setUserPost()
     },
     watch: {
         link() {            
+            this.transition = true
+            this.checkIfUserIsViewing()
+            this.setUserPost()
+        },
+        dummyUser() {
             this.transition = true
             this.checkIfUserIsViewing()
             this.setUserPost()

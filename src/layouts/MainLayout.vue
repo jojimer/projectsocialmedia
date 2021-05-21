@@ -13,13 +13,21 @@
     <q-drawer class="left-drawer" show-if-above v-model="left" side="left" bordered :width="283">
       <!-- <q-icon name="fas fa-circle" size="lg" style="height: 60px; max-width: 150px" color="negative" class="q-ma-md"/> -->
       <img src="logo/favicon-96x96.png" style="height: 60px; max-width: 60px" class="q-ma-md" />
-      <q-list class="u-list-nav">
+      <q-list class="u-list-nav q-gutter-sm">
         <q-item class="u-link-rounded" clickable v-ripple to="/" @click="link = '/'" :active="link === '/'" :style="link !== '/' ? 'color:black;' : ''">
           <q-item-section avatar>
             <q-icon name="home" size="md" />
           </q-item-section>
 
           <q-item-section class="text-h6 text-weight-bold">Home</q-item-section>
+        </q-item>
+
+        <q-item class="u-link-rounded" clickable v-ripple :to="'/notifications'" @click="link = 'notifications'" :active="link === 'notifications'" :style="link !== 'notifications' ? 'color:black;' : ''">
+          <q-item-section avatar>
+            <q-icon name="far fa-bell" size="md" />
+          </q-item-section>
+
+          <q-item-section class="text-h6 text-weight-bold">Notifications</q-item-section>
         </q-item>
 
         <q-item class="u-link-rounded" clickable v-ripple :to="'/profile?u='+handle" @click="link = 'profile'" :active="link === 'profile'" :style="link !== 'profile' ? 'color:black;' : ''">
@@ -180,9 +188,6 @@ export default {
         this.link = ''
       }
     },
-    goToProfile() {
-      
-    },
     async setUsers() { 
         this.dummyUser.map(user => {
           this.db.collection('users').add(user,'user-key'+user.id)
@@ -198,7 +203,6 @@ export default {
           this.currentDummyUser = users          
           this.pickRandomUser()    
           this.getActiveLink()
-          //console.log(this.currentDummyUser)
         }
       }
       catch(error) {
@@ -206,7 +210,7 @@ export default {
       }
     }
   },
-  mounted() {    
+  created() {    
     this.db.config.debug = false    
     this.getUsers()
   }
