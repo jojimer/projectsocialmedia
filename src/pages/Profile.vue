@@ -58,13 +58,13 @@
             </div>
         </q-card-section>
         <q-card-section class="u-profile-name-handle">
-            <div class="q-px-md q-gutter-sm text-left  ">
+            <div class="q-px-md q-gutter-sm text-left">
                 <p class="q-ma-none text-weight-bolder text-h6">{{user.name}}</p>
                 <p class="text-caption q-ma-none text-grey-7 text-weight-regular" style="margin-top:-.4rem">{{user.handle}}</p>   
-                <p class="text-grey-10 text-weight-regular">{{user.bio}}</p>      
+                <p v-show="user.bio" class="text-grey-10 text-weight-regular">{{user.bio}}</p>      
                 <div class="q-mb-sm text-grey-7 q-gutter-sm">
-                    <span class="q-ml-none"><q-icon name="fas fa-map-marker-alt" /> {{user.location}}</span>
-                    <span><q-icon name="fas fa-link" /> 
+                    <span v-show="user.location" class="q-ml-none"><q-icon name="fas fa-map-marker-alt" /> {{user.location}}</span>
+                    <span v-show="user.website"><q-icon name="fas fa-link" /> 
                         <a
                             style="text-decoration:none;"
                             :href="user.website"
@@ -72,7 +72,7 @@
                             target="_blank">{{user.website}}
                         </a>
                     </span>
-                    <span><q-icon name="fas fa-gift" /> {{user.birthday}}</span>
+                    <span v-show="user.birthday"><q-icon name="fas fa-gift" /> {{user.birthday}}</span>
                 </div>       
             </div>
             <div>
@@ -105,6 +105,8 @@
                             <AudioPost
                                 :posts="userPosts"
                                 :users="dummyUser"
+                                :userID="currentUser.id"
+                                :userLikes="currentUser.likes"
                             />
                         </q-tab-panel>
 
@@ -112,6 +114,8 @@
                             <AudioPost
                                 :posts="userReplies"
                                 :users="dummyUser"
+                                :userID="currentUser.id"
+                                :userLikes="currentUser.likes"
                             />
                         </q-tab-panel>
 
@@ -119,6 +123,8 @@
                             <AudioPost
                                 :posts="userLikes"
                                 :users="dummyUser"
+                                :userID="currentUser.id"
+                                :userLikes="currentUser.likes"
                             />
                         </q-tab-panel>
 
@@ -141,6 +147,7 @@ export default {
             tab: 'posts',
             userIsViewing: false, 
             db: new this.$localbase('db'),
+            dbName: this.$databaseName,
             user: {
                 
             },
@@ -178,10 +185,14 @@ export default {
             setTimeout(() => {
                 let userPosts = this.user.postIDs.reverse()
                 let posts = []
-                userPosts.map(postID => {
-                    this.db.collection('audiopost').doc(postID).get()
+                userPosts.map(key => {
+                    this.db.collection(this.dbName.audiopost).doc(key).get({ keys: true })
                         .then(result => {
-                            posts.push(result)
+                            let data = {
+                                key: 'post-key'+result.postID,
+                                data: result
+                            }
+                            posts.push(data)                            
                         }, (err) => {
                             console.log(err)
                         })
@@ -190,14 +201,26 @@ export default {
                 this.userPosts = posts
             },1500)
         },
-        // pushUserInfo(obj) {
-        //     obj.map(post => {
-        //         let array = this.$props.dummyUser.filter(user => user.id == post.user)
-        //         post.user = array[0]
-        //         console.log(array[0])
-        //     })
-        //     return obj
-        // },
+        async setUserLikes() {
+            setTimeout(() => {
+                let userPosts = this.user.likes.reverse()
+                let posts = []
+                userPosts.map(postID => {
+                    this.db.collection(this.dbName.audiopost).doc(postID).get({ keys: true })
+                        .then(result => {
+                            let data = {
+                                key: 'post-key'+result.postID,
+                                data: result
+                            }
+                            posts.push(data)
+                        }, (err) => {
+                            console.log(err)
+                        })
+                })
+
+                this.userLikes = posts
+            },1500)
+        },
         async updatePostsUsersInfo(newData){
             let updatedUser = {
                 id: newData.id,
@@ -208,16 +231,17 @@ export default {
 
             let posts = newData.postIDs
             await posts.map(id => {
-                this.db.collection('audiopost').doc(id).update({user: updatedUser})
+                this.db.collection(this.dbName.audiopost).doc(id).update({user: updatedUser})
             })
             
             setTimeout(() => {
                 this.setUserPost()
-            },2000)
+                this.setUserLikes()
+            },1500)
         },
         async saveProfileInfo(obj) {
-            await this.db.collection('users').doc('user-key'+this.user.id).update(obj)
-            let newData = await this.db.collection('users').doc('user-key'+this.user.id).get()
+            await this.db.collection(this.dbName.users).doc('user-key'+this.user.id).update(obj)
+            let newData = await this.db.collection(this.dbName.users).doc('user-key'+this.user.id).get()
             await this.updatePostsUsersInfo(newData)
             this.user = newData
             this.$emit('updateUserInfo')
@@ -231,6 +255,7 @@ export default {
         this.$emit('changeLink')
         this.db.config.debug = false
         this.setUserPost()
+        this.setUserLikes()
     },
     watch: {
         link(val) {            
@@ -238,12 +263,14 @@ export default {
                 this.transition = true
                 this.checkIfUserIsViewing()
                 this.setUserPost()
+                this.setUserLikes()
             }
         },
         dummyUser() {
             this.transition = true
             this.checkIfUserIsViewing()
             this.setUserPost()
+            this.setUserLikes()
         }
     }
 }

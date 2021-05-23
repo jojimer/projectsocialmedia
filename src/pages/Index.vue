@@ -132,6 +132,8 @@
     <AudioPost
       :posts="realPost"
       :users="dummyUser"
+      :userID="currentUser.id"
+      :userLikes="currentUser.likes"
     />
 
   </q-page>
@@ -195,7 +197,8 @@ export default {
       audioPost: [],      
       realPost: [],
       posting: false,
-      db: new this.$localbase('db')
+      db: new this.$localbase('db'),
+      dbName: this.$databaseName
     }    
   },
   props: {    
@@ -383,7 +386,7 @@ export default {
         return obj
     },
     async fetchPost() {
-      let localDBpostlist = await this.db.collection('audiopost').orderBy('date', 'desc').get()
+      let localDBpostlist = await this.db.collection(this.dbName.audiopost).orderBy('date', 'desc').get({ keys: true })
       this.realPost = localDBpostlist
     },
     async submitAudioPost() {
@@ -399,6 +402,7 @@ export default {
           handle: this.currentUser.handle,
           avatar: this.currentUser.avatar
         },
+        likes: [],
         audioSRC: this.AudioSRC,
         audioBLOB: this.AudioBlob,
         audioLength: length,
@@ -408,8 +412,8 @@ export default {
       }      
       newPostIDs.push('post-key'+obj.postID)
       //console.log(newPostIDs)
-      await this.db.collection('audiopost').add(obj,'post-key'+obj.postID)
-      await this.db.collection('users').doc(userKey).update({postIDs: newPostIDs})
+      await this.db.collection(this.dbName.audiopost).add(obj,'post-key'+obj.postID)
+      await this.db.collection(this.dbName.users).doc(userKey).update({postIDs: newPostIDs})
       await this.resetRecording()
     },    
   },
@@ -423,6 +427,7 @@ export default {
       },
       link(val) {
         if(val === '/') this.fetchPost()
+        this.resetRecording(false)
       },
       dummyUser(val) {
         this.indexDummyUser = val

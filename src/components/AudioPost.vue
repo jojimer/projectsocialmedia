@@ -1,16 +1,16 @@
 <template>
     <div v-if="this.$props.posts.length > 0" class="u-all-post-box q-py-sm q-mb-md">
-        <div class="u-audio-post-box q-ma-none q-pt-md" v-for="(post, index) in this.$props.posts" :key="post.user.name+'-'+post.postID">
+        <div class="u-audio-post-box q-ma-none q-pt-md" v-for="(post, index) in this.$props.posts" :key="post.key">
             <div class="q-pa-sm q-mb-none row">
                 <q-avatar class="q-ml-md q-mt-md">
-                    <img :src="post.user.avatar">
+                    <img :src="post.data.user.avatar">
                 </q-avatar>
                 <div class="u-user-name-handle col-7">
-                    <router-link class="text-subtitle2 text-bold text-primary" :to="'/profile?u='+post.user.handle.substring(1)">{{post.user.name}}</router-link>
-                    <div class="text-subtitle2 text-grey-8 text-weight-regular">{{post.user.handle}}</div>
+                    <router-link class="text-subtitle2 text-bold text-primary" :to="'/profile?u='+post.data.user.handle.substring(1)">{{post.data.user.name}}</router-link>
+                    <div class="text-subtitle2 text-grey-8 text-weight-regular">{{post.data.user.handle}}</div>
                 </div>
                 <div class="text-subtitle2 text-grey col-3 u-post-date text-right">
-                    {{ post.date | niceDate }}
+                    {{ post.data.date | niceDate }}
                 </div>
                 <!-- <div class="col-2">
                     <q-icon :name="post.viewer.icon"></q-icon>
@@ -19,12 +19,12 @@
             </div>
             <AudioPlayer
                 :uniqueID="'userIndex'+index"
-                :AudioSRC="getAudioSource(post.audioBLOB)"
-                :maxLength="post.audioLength"
+                :AudioSRC="getAudioSource(post.data.audioBLOB)"
+                :maxLength="post.data.audioLength"
                 :closeBTN="false"
             />
             <div class="u-post-mentioned">
-                <q-chip class="q-my-md" v-for="(user, index) in post.mentionedUsers" :key="index">
+                <q-chip class="q-my-md" v-for="(user, index) in post.data.mentionedUsers" :key="index">
                     <q-avatar>
                         <img :src="user.avatar">
                     </q-avatar>
@@ -34,9 +34,11 @@
             <div class="u-post-action q-mt-lg">
                 <q-btn-group flat spread>
                     <q-btn
+                        @click="toggleLikes(post.key,post.data.likes)"
                         class="q-py-sm u-like-react"
-                        color="grey-5"
-                        icon="far fa-heart"
+                        :color="checkIfUSerLikeThePost(post.key) ? 'red-5' : 'grey-5'"
+                        :icon="checkIfUSerLikeThePost(post.key) ? 'fas fa-heart' : 'far fa-heart'"
+                        :label="post.data.likes.length > 0 ? post.data.likes.length : ''"
                         flat
                     />
                     <q-btn
@@ -77,12 +79,16 @@ export default {
         return {
             muted: true,
             likeColor: [],
-            loading: true
+            loading: true,
+            db: new this.$localbase('db'),
+            dbName: this.$databaseName
         }
     },
     props: {
         posts: Array,
-        users: Array
+        users: Array,
+        userID: String,
+        userLikes: Array
     },
     components: {
         AudioPlayer
@@ -90,11 +96,42 @@ export default {
     methods: {
         getAudioSource(blob){
             return URL.createObjectURL(blob)
+        },
+        async toggleLikes(key,likers){
+            let userID = this.$props.userID
+            let userlikes = this.$props.userLikes            
+            
+            if(!userlikes.includes(key) && !likers.includes(userID)){
+                likers.push(userID)
+                userlikes.push(key)
+                await this.db.collection(this.dbName.audiopost).doc(key).update({likes: likers})
+                await this.db.collection(this.dbName.users).doc('user-key'+userID).update({likes: userlikes})
+                //console.log('Add')
+            }else{                
+                const rlikers = likers.indexOf(userID)
+                const rpostKey = userlikes.indexOf(key)
+                if (rlikers > -1 && rpostKey > -1) {
+                    //Remove likes from post
+                    likers.splice(rlikers, 1)
+                    await this.db.collection(this.dbName.audiopost).doc(key).update({likes: likers})
+                    //Remove post like to user data
+                    userlikes.splice(rpostKey, 1)
+                    await this.db.collection(this.dbName.users).doc('user-key'+userID).update({likes: userlikes})
+                }
+                //console.log('Delete')
+            }            
+        },
+        checkIfUSerLikeThePost(key){
+            let userlikes = this.$props.userLikes
+            const rpostKey = userlikes.indexOf(key)
+            return (rpostKey > -1) ? true : false
         }
     },
     created() {
+        this.db.config.debug = false
         setTimeout(() => {
             this.loading = false
+            //console.log(this.$props.posts)
         },3000)
     },
     filters: {

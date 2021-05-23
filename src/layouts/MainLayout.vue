@@ -120,6 +120,7 @@ export default {
       right: false,
       link: '',
       db: new this.$localbase('db'),
+      dbName: this.$databaseName,
       handle: '',
       currentUser: {},
       currentDummyUser: [],
@@ -238,13 +239,13 @@ export default {
     },
     async setUsers() { 
         this.staticUser.map(user => {
-          this.db.collection('users').add(user,'user-key'+user.id)
+          this.db.collection(this.dbName.users).add(user,'user-key'+user.id)
         })
         this.getUsers()
     },
     async getUsers() {
       try {
-        let users = await this.db.collection('users').get()
+        let users = await this.db.collection(this.dbName.users).get()
         if(users.length === 0){
           this.setUsers()
         }else{
@@ -258,7 +259,7 @@ export default {
       }
     },
     async updateUserInfo(){
-      let newData = await this.db.collection('users').doc('user-key'+this.currentUser.id).get()
+      let newData = await this.db.collection(this.dbName.users).doc('user-key'+this.currentUser.id).get()
       this.currentUser = newData
     }
   },

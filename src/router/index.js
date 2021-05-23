@@ -4,6 +4,10 @@ import routes from './routes'
 import Localbase from 'localbase'
 
 Vue.prototype.$localbase = Localbase
+Vue.prototype.$databaseName = {
+  audiopost: 'audiopost01',
+  users: 'users01'
+}
 
 Vue.use(VueRouter)
 
