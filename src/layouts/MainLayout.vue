@@ -14,7 +14,7 @@
       <!-- <q-icon name="fas fa-circle" size="lg" style="height: 60px; max-width: 150px" color="negative" class="q-ma-md"/> -->
       <img src="logo/favicon-96x96.png" style="height: 60px; max-width: 60px" class="q-ma-md" />
       <q-list class="u-list-nav q-gutter-sm">
-        <q-item class="u-link-rounded" clickable v-ripple to="/" @click="link = '/'" :active="link === '/'" :style="link !== '/' ? 'color:black;' : ''">
+        <q-item :class="link === '/' ? 'q-item.q-router-link--active' : ''" class="u-link-rounded" clickable v-ripple to="/" @click="link = '/'" :active="link === '/'" :style="link !== '/' ? 'color:black;' : ''">
           <q-item-section avatar>
             <q-icon name="home" size="md" />
           </q-item-section>
@@ -22,7 +22,7 @@
           <q-item-section class="text-h6 text-weight-bold">Home</q-item-section>
         </q-item>
 
-        <q-item class="u-link-rounded" clickable v-ripple :to="'/notifications'" @click="link = 'notifications'" :active="link === 'notifications'" :style="link !== 'notifications' ? 'color:black;' : ''">
+        <q-item :class="link === 'notifications' ? 'q-item.q-router-link--active' : ''" class="u-link-rounded" clickable v-ripple :to="'/notifications'" @click="link = 'notifications'" :active="link === 'notifications'">
           <q-item-section avatar>
             <q-icon name="far fa-bell" size="md" />
           </q-item-section>
@@ -30,7 +30,7 @@
           <q-item-section class="text-h6 text-weight-bold">Notifications</q-item-section>
         </q-item>
 
-        <q-item class="u-link-rounded" clickable v-ripple :to="'/profile?u='+handle" @click="link = 'profile'" :active="link === 'profile'" :style="link !== 'profile' ? 'color:black;' : ''">
+        <q-item :class="link === 'profile' ? 'q-item.q-router-link--active' : ''" class="u-link-rounded" clickable v-ripple :to="'/profile?u='+handle" @click="link = 'profile'" :active="link === 'profile'" :style="link !== 'profile' && this.$route.query.u !== handle ? 'color:black;' : ''">
           <q-item-section avatar>
             <q-icon name="far fa-user" size="md" />
           </q-item-section>
@@ -101,7 +101,13 @@
     </q-drawer>
 
     <q-page-container style="padding-top:0;">
-      <router-view :currentUser="currentUser" :dummyUser="currentDummyUser" :link="link" v-on:changeLink="getActiveLink" />
+      <router-view
+        @changeLink="getActiveLink"
+        @updateUserInfo="updateUserInfo"
+        :currentUser="currentUser"
+        :dummyUser="currentDummyUser"
+        :link="link"
+      />
     </q-page-container>
   </q-layout>
 </template>
@@ -117,54 +123,96 @@ export default {
       handle: '',
       currentUser: {},
       currentDummyUser: [],
-      dummyUser:[
+      staticUser:[
         {
           id: '001',
           name: 'Quintino Araújo',
           handle: '@Quintino_Araújo',
+          bio: '',
+          location: '',
+          website: '',
+          cover: '',          
+          birthday: '',
           email: 'quintino.araujo@example.com',
           avatar: 'https://randomuser.me/api/portraits/men/53.jpg',
-          postIDs: []
+          postIDs: [],
+          replies: [],
+          likes: []
         },
         {
           id: '002',
           name: 'Nicole Jordan',
           handle: '@Nicole_Jordan',
+          bio: '',
+          location: '',
+          website: '',
+          cover: '',
+          birthday: '',
           email: 'nicole.jordan@example.com',
           avatar: 'https://randomuser.me/api/portraits/women/64.jpg',
-          postIDs: []
+          postIDs: [],
+          replies: [],
+          likes: []
         },
         {
           id: '003',
           name: 'Manuela Gil',
           handle: '@Manuela_Gil',
+          bio: '',
+          location: '',
+          website: '',
+          cover: '',
+          birthday: '',
           email: 'manuela.gil@example.com',
           avatar: 'https://randomuser.me/api/portraits/women/78.jpg',
-          postIDs: []
+          postIDs: [],
+          replies: [],
+          likes: []
         },
         {
           id: '004',
           name: 'Roy Brüning',
           handle: '@Roy_Brüning',
+          bio: '',
+          location: '',
+          website: '',
+          cover: '',
+          birthday: '',
           email: 'roy.bruning@example.com',
           avatar: 'https://randomuser.me/api/portraits/men/73.jpg',
-          postIDs: []
+          postIDs: [],
+          replies: [],
+          likes: []
         },
         {
           id: '005',
           name: 'Christina Rogers',
           handle: '@Christina_Rogers',
+          bio: '',
+          location: '',
+          website: '',
+          cover: '',
+          birthday: '',
           email: 'christina.rogers@example.com',
           avatar: 'https://randomuser.me/api/portraits/women/5.jpg',
-          postIDs: []
+          postIDs: [],
+          replies: [],
+          likes: []
         },
         {
           id: '006',
           name: 'Ronnie Welch',
           handle: '@Ronnie_Welch',
+          bio: '',
+          location: '',
+          website: '',
+          cover: '',
+          birthday: '',
           email: 'ronnie.welch@example.com',
           avatar: 'https://randomuser.me/api/portraits/men/35.jpg',
-          postIDs: []
+          postIDs: [],
+                replies: [],
+                likes: []
         },
       ],
     };
@@ -189,7 +237,7 @@ export default {
       }
     },
     async setUsers() { 
-        this.dummyUser.map(user => {
+        this.staticUser.map(user => {
           this.db.collection('users').add(user,'user-key'+user.id)
         })
         this.getUsers()
@@ -208,11 +256,18 @@ export default {
       catch(error) {
         console.log('error: ', error)
       }
+    },
+    async updateUserInfo(){
+      let newData = await this.db.collection('users').doc('user-key'+this.currentUser.id).get()
+      this.currentUser = newData
     }
   },
   created() {    
     this.db.config.debug = false    
     this.getUsers()
+  },
+  watch: {
+
   }
 };
 </script>

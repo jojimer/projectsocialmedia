@@ -56,6 +56,13 @@
             </div>
         </div>
     </div>
+    <div v-else-if="loading" style="margin:7rem auto; width:20%; text-align:center;">
+        <q-spinner
+            color="primary"
+            size="3rem"
+            :thickness="3"
+        />
+    </div>
     <div v-else class="q-py-lg q-mb-md text-center text-grey-5">
         <h6 class="text-weight-regular">No post available!</h6>
     </div>
@@ -69,7 +76,8 @@ export default {
     data() {
         return {
             muted: true,
-            likeColor: []
+            likeColor: [],
+            loading: true
         }
     },
     props: {
@@ -85,13 +93,22 @@ export default {
         }
     },
     created() {
-
+        setTimeout(() => {
+            this.loading = false
+        },3000)
     },
     filters: {
         niceDate(time) {
             return date.formatDate(time, "MMMM D, h:mmA ");
         },
     },
+    watch: {
+        posts() {
+            setTimeout(() => {
+                this.loading = false
+            },3000)
+        }
+    }
 }
 </script>
 <style scoped lang="sass">

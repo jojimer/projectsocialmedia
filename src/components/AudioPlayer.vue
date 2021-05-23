@@ -116,7 +116,7 @@
                 this.volume = (this.volume === 0) ? this.previousVolume : 0
             },
             getAudioDuration() {
-                if(this.$props.maxLength === 0){
+                if(this.$props.maxLength === 0 && this.$props.AudioSRC !== ''){
                     setTimeout(() => {
                         let audio = document.querySelector('#audioPlayer'+this.$props.uniqueID);
                         this.audioDuration = Math.ceil(audio.duration.toFixed(2)) - 1

@@ -2,6 +2,7 @@
 .constrain
     max-width: 1280px
     margin: 0 auto
+    position: relative!important
 
 .left-drawer
     position: fixed
@@ -14,6 +15,9 @@
     right: 0
     top: 0
     height: 100%
+
+.right-drawer .q-drawer__content
+    overflow: hidden
 
 .relative-p
     position: relative!important
@@ -81,7 +85,22 @@ button.u-message-control span.absolute-full i
     cursor: pointer
 
 //Profile
+div.u-profile-avatar .u-profile-picture div:first-child
+    background-color: #dfdfdf
+
 div.u-profile-avatar .u-profile-picture .q-img__image
     border: 5px solid white
     border-radius: 100%
     box-shadow: rgb(0 0 0 / 2%) 0px 0px 2px inset
+
+div.u-editor-wrap .q-img__image
+    box-shadow: inset 0 0 0 2000px rgb(0 0 0 / 20%)!important
+
+.u-input-name > div > div:last-child, .u-input-location > div > div:last-child, .u-input-website > div > div:last-child
+    transform: translateY(0%)
+    top: 0
+
+.u-input-bio > div > div:last-child
+    position: absolute
+    top: 0
+    right: 0

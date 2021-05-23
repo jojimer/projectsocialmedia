@@ -2,10 +2,12 @@
   <q-page>
     <div class="u-post-box row">
       <div class="col-12">
-          <div class="u-msgbox-comp">             
-              <q-avatar class="q-ml-md">
-                <img :src="currentUser.avatar">
-              </q-avatar>
+          <div class="u-msgbox-comp">   
+              <router-link :to="'/profile?u='+handle">          
+                <q-avatar class="q-ml-md">
+                  <img :src="currentUser.avatar">
+                </q-avatar>
+              </router-link>
               <AudioPlayer
                 v-if="audioPlayer"
                 :uniqueID="'audioPostPlayback'"
@@ -129,7 +131,7 @@
     
     <AudioPost
       :posts="realPost"
-      :users="dummyUser"      
+      :users="dummyUser"
     />
 
   </q-page>
@@ -183,9 +185,11 @@ export default {
           text: 'Only people you mention'
         }
       },
+      handle: '',
       mentionBox: true,
       postMentionWrap: false,
       searchMentionUser: '',
+      indexDummyUser: [],
       mentionedUser: [],
       mentionOption: [],
       audioPost: [],      
@@ -197,6 +201,7 @@ export default {
   props: {    
       currentUser: Object,
       dummyUser: Array,
+      link: String
   },
   components: {
     InActiveBox,
@@ -277,6 +282,7 @@ export default {
       const reset = () => {
         this.audioPlayer = false
         this.currentTime = 0
+        this.indexDummyUser = this.$props.dummyUser
         this.mentionedUser = []      
         this.posting = false
         this.postViewer = {
@@ -285,8 +291,8 @@ export default {
         }    
       }
       if(val){
-        setTimeout(() => {
-          reset()    
+        setTimeout(() => {          
+          reset()         
           this.fetchPost()
         },3000)
       }else{
@@ -312,7 +318,7 @@ export default {
       this.postViewerWrap = false
     },
     pushMentionOption() {
-      let users = this.dummyUser
+      let users = this.indexDummyUser
       let search = this.searchMentionUser
       let mentioned = this.mentionedUser
       let option = []
@@ -369,9 +375,16 @@ export default {
         this.audioPlayer = true
       }
     },
+    pushUserInfo(obj) {
+        obj.map(post => {
+            let array = this.$props.dummyUser.filter(user => user.id == post.user)
+            post.user = array[0]
+        })
+        return obj
+    },
     async fetchPost() {
       let localDBpostlist = await this.db.collection('audiopost').orderBy('date', 'desc').get()
-      this.realPost = await localDBpostlist
+      this.realPost = localDBpostlist
     },
     async submitAudioPost() {
       this.posting = true
@@ -380,7 +393,12 @@ export default {
       let userKey = 'user-key'+this.$props.currentUser.id
       let obj = {
         postID: Math.random(),
-        user: this.currentUser,
+        user: {
+          id: this.currentUser.id,
+          name: this.currentUser.name,
+          handle: this.currentUser.handle,
+          avatar: this.currentUser.avatar
+        },
         audioSRC: this.AudioSRC,
         audioBLOB: this.AudioBlob,
         audioLength: length,
@@ -389,18 +407,26 @@ export default {
         date: Date.now(),
       }      
       newPostIDs.push('post-key'+obj.postID)
-      console.log(newPostIDs)
+      //console.log(newPostIDs)
       await this.db.collection('audiopost').add(obj,'post-key'+obj.postID)
       await this.db.collection('users').doc(userKey).update({postIDs: newPostIDs})
       await this.resetRecording()
     },    
   },
-  mounted() {      
+  created() {      
     this.db.config.debug = false
-    this.fetchPost()
   },
-  created(){    
-      
+  watch: {    
+      currentUser() {
+        this.handle = this.$props.currentUser.handle.substring(1)
+        this.fetchPost()
+      },
+      link(val) {
+        if(val === '/') this.fetchPost()
+      },
+      dummyUser(val) {
+        this.indexDummyUser = val
+      }
   },
   beforeDestroy() {
     if(this.hasMicrophoneSupport) {

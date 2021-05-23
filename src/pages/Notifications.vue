@@ -1,5 +1,5 @@
 <template>
     <q-page>
-        <h1 class="text-center q-pa-xl">Notifications!</h1>
+        <h6 class="text-left text-weight-bolder q-pa-md q-my-none">Notifications</h6>
     </q-page>
 </template>

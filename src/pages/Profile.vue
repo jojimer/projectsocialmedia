@@ -1,12 +1,33 @@
-<template>
+<template>    
     <q-page :class="transition ? 'fade-enter' : 'fade-enter-active'">
+        <ProfileLightbox 
+        v-if="userIsViewing"
+        :user="{
+            avatar: user.avatar,
+            name: user.name,
+            cover: user.cover,
+            bio: user.bio,
+            location: user.location,
+            website: user.website,
+            birthday: user.birthday
+        }" 
+        :show="lightbox"        
+        @saveProfileInfo="saveProfileInfo"
+        @hideLightBox="(val) => lightbox = val "/>
         <q-card class="my-card" square flat>
         <q-img
-            src="https://cdn.quasar.dev/img/parallax1.jpg"
+        v-if="user.cover"
+            :src="user.cover"
             height="11rem"
-            no-default-spinner            
+            no-default-spinner        
+            class="thisHasContent"    
         />
-
+        <q-img
+            v-else
+            height="11rem"
+            no-default-spinner
+            class="bg-grey"
+        />
         <q-card-section class="u-profile-avatar">
             <q-avatar size="8rem">
                 <q-icon
@@ -25,21 +46,34 @@
         </q-card-section>
         <q-card-section v-if="userIsViewing" class="u-edit-profile">
             <div class="q-px-md q-gutter-sm text-right ">
-                <q-btn rounded unelevated outline no-wrap color="primary" no-caps label="Edit profile" />
+                <q-btn @click="lightbox = true" rounded unelevated outline no-wrap color="primary" no-caps label="Edit profile" />
             </div>
         </q-card-section>
         <q-card-section v-else class="u-profile-action">
             <div class="q-px-md q-gutter-sm text-right ">
                 <q-btn round outline color="primary" icon="fas fa-ellipsis-h" />
                 <q-btn round unelevated color="primary" icon="fas fa-bell" />
+                <q-btn rounded unelevated no-wrap color="primary" icon="fas fa-user-plus" no-caps label="Add friend" />
                 <q-btn rounded unelevated no-wrap color="primary" no-caps label="Listening" />
             </div>
         </q-card-section>
         <q-card-section class="u-profile-name-handle">
             <div class="q-px-md q-gutter-sm text-left  ">
                 <p class="q-ma-none text-weight-bolder text-h6">{{user.name}}</p>
-                <p class="text-subtitle2 q-ma-none text-grey-8 text-weight-regular" style="margin-top:-.4rem">{{user.handle}}</p>   
-                <p class="text-grey-7 text-weight-regular">Lorem ipsum, dolor sit amet consectetur adipisicing elit. Quod laborum natus eaque minima sed repellendus voluptas repellat, maxime fuga veniam.</p>             
+                <p class="text-caption q-ma-none text-grey-7 text-weight-regular" style="margin-top:-.4rem">{{user.handle}}</p>   
+                <p class="text-grey-10 text-weight-regular">{{user.bio}}</p>      
+                <div class="q-mb-sm text-grey-7 q-gutter-sm">
+                    <span class="q-ml-none"><q-icon name="fas fa-map-marker-alt" /> {{user.location}}</span>
+                    <span><q-icon name="fas fa-link" /> 
+                        <a
+                            style="text-decoration:none;"
+                            :href="user.website"
+                            class="q-px-sm text-primary"
+                            target="_blank">{{user.website}}
+                        </a>
+                    </span>
+                    <span><q-icon name="fas fa-gift" /> {{user.birthday}}</span>
+                </div>       
             </div>
             <div>
                 <div class="text-subtitle2">
@@ -76,7 +110,7 @@
 
                         <q-tab-panel name="replies">
                             <AudioPost
-                                :posts="userLikes"
+                                :posts="userReplies"
                                 :users="dummyUser"
                             />
                         </q-tab-panel>
@@ -99,6 +133,7 @@
 </template>
 
 <script>
+import ProfileLightbox from '../components/Profile/ProfileLightbox'
 import AudioPost from '../components/AudioPost'
 export default {
     data() {
@@ -107,14 +142,13 @@ export default {
             userIsViewing: false, 
             db: new this.$localbase('db'),
             user: {
-                avatar: '',
-                handle: '',
-                name: '',
-                postIDs: []
+                
             },
             userPosts: [],
+            userReplies: [],
             userLikes: [],
-            transition: false
+            transition: false,
+            lightbox: false
         }
     },
     props: {
@@ -123,7 +157,8 @@ export default {
         link: String
     },
     components: {
-        AudioPost
+        AudioPost,
+        ProfileLightbox
     },
     methods: {
         checkIfUserIsViewing(){
@@ -140,17 +175,53 @@ export default {
             },300)
         },
         async setUserPost() {
-            let userPosts = this.user.postIDs.reverse()
-            let posts = []
-            userPosts.map(postID => {
-                this.db.collection('audiopost').doc(postID).get()
-                    .then(result => {
-                        posts.push(result)
-                    }, (err) => {
-                        console.log(err)
-                    })
+            setTimeout(() => {
+                let userPosts = this.user.postIDs.reverse()
+                let posts = []
+                userPosts.map(postID => {
+                    this.db.collection('audiopost').doc(postID).get()
+                        .then(result => {
+                            posts.push(result)
+                        }, (err) => {
+                            console.log(err)
+                        })
+                })
+
+                this.userPosts = posts
+            },1500)
+        },
+        // pushUserInfo(obj) {
+        //     obj.map(post => {
+        //         let array = this.$props.dummyUser.filter(user => user.id == post.user)
+        //         post.user = array[0]
+        //         console.log(array[0])
+        //     })
+        //     return obj
+        // },
+        async updatePostsUsersInfo(newData){
+            let updatedUser = {
+                id: newData.id,
+                name: newData.name,
+                handle: newData.handle,
+                avatar: newData.avatar
+            }
+
+            let posts = newData.postIDs
+            await posts.map(id => {
+                this.db.collection('audiopost').doc(id).update({user: updatedUser})
             })
-            this.userPosts = posts
+            
+            setTimeout(() => {
+                this.setUserPost()
+            },2000)
+        },
+        async saveProfileInfo(obj) {
+            await this.db.collection('users').doc('user-key'+this.user.id).update(obj)
+            let newData = await this.db.collection('users').doc('user-key'+this.user.id).get()
+            await this.updatePostsUsersInfo(newData)
+            this.user = newData
+            this.$emit('updateUserInfo')
+            this.lightbox = false
         }
     },
     created() {
@@ -162,10 +233,12 @@ export default {
         this.setUserPost()
     },
     watch: {
-        link() {            
-            this.transition = true
-            this.checkIfUserIsViewing()
-            this.setUserPost()
+        link(val) {            
+            if(val === 'profile' || this.$route.query.u){
+                this.transition = true
+                this.checkIfUserIsViewing()
+                this.setUserPost()
+            }
         },
         dummyUser() {
             this.transition = true
