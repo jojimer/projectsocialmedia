@@ -24,12 +24,14 @@
                 :closeBTN="false"
             />
             <div class="u-post-mentioned">
-                <q-chip class="q-my-md" v-for="(user, index) in post.data.mentionedUsers" :key="index">
+                <router-link :to="'profile?u='+user.handle.substring(1)" v-for="(user, index) in post.data.mentionedUsers" :key="index">
+                <q-chip class="q-mt-md q-mb-none" @click="this.$emit('changeProfilePage')">
                     <q-avatar>
                         <img :src="user.avatar">
                     </q-avatar>
                     {{user.handle}}
                 </q-chip>
+                </router-link>
             </div>
             <div class="u-post-action q-mt-lg">
                 <q-btn-group flat spread>
@@ -174,9 +176,13 @@ export default {
     div.u-post-mentioned
         display: flex
         justify-content: flex-end
-        width: 85%
+        flex-wrap: wrap
+        width: 90%
         margin-left: auto
         margin-right: 20px
+
+    div.u-post-mentioned a
+        text-decoration: none
 
     div.u-post-date
         position: relative

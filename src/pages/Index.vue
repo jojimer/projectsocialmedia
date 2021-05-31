@@ -86,7 +86,7 @@
               class="q-mr-md"
               color="primary"
               :icon="postViewer.icon"
-              :label="postViewer.text+' can reply'"
+              :label="postViewer.text+' can view'"
               flat
               no-caps
               rounded
@@ -101,15 +101,19 @@
                 </q-card-section>
                 <q-card-actions vertical class="q-px-none q-py-xs">
                   <q-btn @click="changePostViewer('Everyone')" color="primary" flat padding=".5rem 1rem" align="left" no-caps>
-                    <span class="q-mr-auto"><q-icon class="q-mr-sm" :name="whoCanView.public.icon"/> <span class="text-grey-9">{{whoCanView.public.text}}</span></span>
+                    <span class="q-mr-auto"><q-icon class="q-mr-xs" :name="whoCanView.public.icon"/> <span class="text-grey-9">{{whoCanView.public.text}}</span></span>
                     <q-icon v-show="whoCanView.public.text == postViewer.text" name="check"/>
                   </q-btn>
+                  <q-btn @click="changePostViewer('Friends')" color="primary" flat padding=".5rem 1rem" align="left" no-caps>
+                    <span class="q-mr-auto"><q-icon class="q-mr-xs" :name="whoCanView.friends.icon"/> <span class="text-grey-9 q-mr-auto">{{whoCanView.friends.text}}</span></span>
+                    <q-icon v-show="whoCanView.friends.text == postViewer.text" name="check"/>
+                  </q-btn>
                   <q-btn @click="changePostViewer('People you follow')" color="primary" flat padding=".5rem 1rem" align="left" no-caps>
-                    <span class="q-mr-auto"><q-icon class="q-mr-sm" :name="whoCanView.following.icon"/> <span class="text-grey-9 q-mr-auto">{{whoCanView.following.text}}</span></span>
+                    <span class="q-mr-auto"><q-icon class="q-mr-xs" :name="whoCanView.following.icon"/> <span class="text-grey-9 q-mr-auto">{{whoCanView.following.text}}</span></span>
                     <q-icon v-show="whoCanView.following.text == postViewer.text" name="check"/>
                   </q-btn>
                   <q-btn @click="changePostViewer('Only people you mention')" color="primary" flat padding=".5rem 1rem" align="left" no-caps>
-                    <span class="q-mr-auto"><q-icon class="q-mr-sm" :name="whoCanView.mention.icon"/> <span class="text-grey-9 q-mr-auto">{{whoCanView.mention.text}}</span></span>
+                    <span class="q-mr-auto"><q-icon class="q-mr-xs" :name="whoCanView.mention.icon"/> <span class="text-grey-9 q-mr-auto">{{whoCanView.mention.text}}</span></span>
                     <q-icon v-show="whoCanView.mention.text == postViewer.text" name="check"/>
                   </q-btn>
                 </q-card-actions>
@@ -175,14 +179,22 @@ export default {
       },
       whoCanView: {
         public: {
+          id: 'all',
           icon: 'fas fa-globe-europe',
           text: 'Everyone'
         },
+        friends: {
+          id: 'frnd',
+          icon: 'fas fa-user-friends',
+          text: 'Friends'
+        },
         following: {
+          id: 'pyf',
           icon: 'fas fa-user-check',
           text: 'People you follow'
         },
         mention: {
+          id: 'opm',
           icon: 'alternate_email',
           text: 'Only people you mention'
         }
@@ -309,6 +321,9 @@ export default {
       switch (text) {        
         case this.whoCanView.public.text: 
           this.postViewer = this.whoCanView.public  
+        break
+        case this.whoCanView.friends.text: 
+          this.postViewer = this.whoCanView.friends  
         break
         case this.whoCanView.following.text: 
           this.postViewer = this.whoCanView.following

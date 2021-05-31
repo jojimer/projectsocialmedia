@@ -9,6 +9,7 @@
     "icons": "icongenie generate -i public/icons/asm-logo.png --skip-trim --theme-color fbfbfb"
   },
   "dependencies": {
+    "@quasar/cli": "^1.2.0",
     "@quasar/extras": "^1.0.0",
     "core-js": "^3.6.5",
     "localbase": "^0.7.5",

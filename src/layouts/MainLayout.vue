@@ -5,7 +5,7 @@
         <q-icon dense flat round name="menu" />
 
         <q-toolbar-title class="text-weight-bold">
-          ASM
+          Vumbook
         </q-toolbar-title>
       </q-toolbar>
     </q-header>
@@ -104,6 +104,7 @@
       <router-view
         @changeLink="getActiveLink"
         @updateUserInfo="updateUserInfo"
+        @changeProfilePage="changeProfilePage"
         :currentUser="currentUser"
         :dummyUser="currentDummyUser"
         :link="link"
@@ -137,6 +138,15 @@ export default {
           email: 'quintino.araujo@example.com',
           avatar: 'https://randomuser.me/api/portraits/men/53.jpg',
           postIDs: [],
+          friends: [],
+          friendRequests: [],
+          pendingRequests: [],
+          totalFriends: 0,
+          followers: [],
+          totalFollowers: 0,
+          following: [],
+          totalFollowing: 0,
+          notifications: [],
           replies: [],
           likes: []
         },
@@ -152,6 +162,15 @@ export default {
           email: 'nicole.jordan@example.com',
           avatar: 'https://randomuser.me/api/portraits/women/64.jpg',
           postIDs: [],
+          friends: [],
+          friendRequests: [],
+          pendingRequests: [],
+          totalFriends: 0,
+          followers: [],
+          totalFollowers: 0,
+          following: [],
+          totalFollowing: 0,
+          notifications: [],
           replies: [],
           likes: []
         },
@@ -167,6 +186,15 @@ export default {
           email: 'manuela.gil@example.com',
           avatar: 'https://randomuser.me/api/portraits/women/78.jpg',
           postIDs: [],
+          friends: [],
+          friendRequests: [],
+          pendingRequests: [],
+          totalFriends: 0,
+          followers: [],
+          totalFollowers: 0,
+          following: [],
+          totalFollowing: 0,
+          notifications: [],
           replies: [],
           likes: []
         },
@@ -182,6 +210,15 @@ export default {
           email: 'roy.bruning@example.com',
           avatar: 'https://randomuser.me/api/portraits/men/73.jpg',
           postIDs: [],
+          friends: [],
+          friendRequests: [],
+          pendingRequests: [],
+          totalFriends: 0,
+          followers: [],
+          totalFollowers: 0,
+          following: [],
+          totalFollowing: 0,
+          notifications: [],
           replies: [],
           likes: []
         },
@@ -197,6 +234,15 @@ export default {
           email: 'christina.rogers@example.com',
           avatar: 'https://randomuser.me/api/portraits/women/5.jpg',
           postIDs: [],
+          friends: [],
+          friendRequests: [],
+          pendingRequests: [],
+          totalFriends: 0,
+          followers: [],
+          totalFollowers: 0,
+          following: [],
+          totalFollowing: 0,
+          notifications: [],
           replies: [],
           likes: []
         },
@@ -212,8 +258,17 @@ export default {
           email: 'ronnie.welch@example.com',
           avatar: 'https://randomuser.me/api/portraits/men/35.jpg',
           postIDs: [],
-                replies: [],
-                likes: []
+          friends: [],
+          friendRequests: [],
+          pendingRequests: [],
+          totalFriends: 0,
+          followers: [],
+          totalFollowers: 0,
+          following: [],
+          totalFollowing: 0,
+          notifications: [],
+          replies: [],
+          likes: []
         },
       ],
     };
@@ -224,18 +279,22 @@ export default {
   methods: {
     pickRandomUser() {
       //Select Random User
-      let n = Math.floor((Math.random() * 5))
+      let n = (this.$route.query.getUser === undefined) ? Math.floor((Math.random() * 5)) : this.$route.query.getUser
       this.currentUser = this.currentDummyUser[n]      
       this.handle = this.currentUser.handle.substring(1)
     },
     getActiveLink() {
       if(this.$route.path === 'profile' && this.$route.query.u === this.handle){
-        this.link = 'profile'
+        this.link = 'profile?='+this.$route.query.u
       }else if(this.$route.path === '/'){
         this.link = '/'
       }else{
         this.link = ''
       }
+    },
+    changeProfilePage() {
+        this.link = 'profile?='+this.$route.query.u
+        console.log(this.link)
     },
     async setUsers() { 
         this.staticUser.map(user => {
@@ -258,10 +317,10 @@ export default {
         console.log('error: ', error)
       }
     },
-    async updateUserInfo(){
+    async updateUserInfo() {
       let newData = await this.db.collection(this.dbName.users).doc('user-key'+this.currentUser.id).get()
       this.currentUser = newData
-    }
+    },
   },
   created() {    
     this.db.config.debug = false    

@@ -52,9 +52,34 @@
         <q-card-section v-else class="u-profile-action">
             <div class="q-px-md q-gutter-sm text-right ">
                 <q-btn round outline color="primary" icon="fas fa-ellipsis-h" />
-                <q-btn round unelevated color="primary" icon="fas fa-bell" />
-                <q-btn rounded unelevated no-wrap color="primary" icon="fas fa-user-plus" no-caps label="Add friend" />
-                <q-btn rounded unelevated no-wrap color="primary" no-caps label="Listening" />
+                <q-btn v-show="notificationBTN" round outline color="primary" icon="notification_add" />
+                <div class="u-btn-friend-request-wrap">
+                    <q-btn
+                        @click="toggleFriendButton(user.id,request)"
+                        @mouseenter="friendRequestLabel === 'Friends' ? changeFriendsButtonLabel('enter') : null"
+                        @mouseleave="friendRequestLabel === 'Unfriend' ? changeFriendsButtonLabel('leave') : null"
+                        :color="friendRequestLabel === 'Unfriend' ? 'negative' : 'primary'"
+                        no-caps
+                        no-wrap
+                        rounded
+                        unelevated
+                        :loading="friendbtnLoading"
+                    >
+                        <template slot="default">
+                            <q-icon :name="friendRequestIcon" />
+                            <span class="block q-ml-sm">{{friendRequestLabel}}</span>
+                        </template>
+                        <template slot="loading">
+                            <q-spinner color="white" size="1.5rem" :thickness="5" />
+                            <span class="block q-ml-sm">{{friendRequestLabel}}</span>
+                        </template>
+                    </q-btn>
+                    <div class="u-btn-respond-wrap" v-show="toggleRespond">
+                        <q-btn color="primary" flat align="left" label="accept" @click="requestRespond(user.id,'accept')" />
+                        <q-btn color="primary" flat align="left" label="decline" @click="requestRespond(user.id,'decline')" />
+                    </div>
+                </div>
+                <q-btn rounded outline no-wrap color="primary" no-caps label="Listen" />
             </div>
         </q-card-section>
         <q-card-section class="u-profile-name-handle">
@@ -116,6 +141,7 @@
                                 :users="dummyUser"
                                 :userID="currentUser.id"
                                 :userLikes="currentUser.likes"
+                                @changeProfilePage="this.$emit('changeProfilePage')"
                             />
                         </q-tab-panel>
 
@@ -148,11 +174,18 @@ export default {
             userIsViewing: false, 
             db: new this.$localbase('db'),
             dbName: this.$databaseName,
+            notificationBTN: false,
             user: {
                 
             },
+            request: 'respond',
+            friendRequestLabel: 'Add friend',
+            friendRequestIcon: 'fas fa-user-plus',
+            friendbtnLoading: false,
+            toggleRespond: false,
             userPosts: [],
             userReplies: [],
+            userFriends: [],
             userLikes: [],
             transition: false,
             lightbox: false
@@ -176,6 +209,7 @@ export default {
             }else{
                 let user = this.$props.dummyUser.filter(user => { if(user.handle === handle) return user})
                 this.user = user[0]
+                this.checkIfProfileIsFriend(this.user.id)
             }
             setTimeout(() => {
                 this.transition = false
@@ -246,6 +280,147 @@ export default {
             this.user = newData
             this.$emit('updateUserInfo')
             this.lightbox = false
+        },
+        async toggleFriendButton(id,request) {
+            if(request !== 'respond') this.friendbtnLoading = true
+            let userID = this.$props.currentUser.id
+            let userFriends = this.$props.currentUser.friends
+            let profileFriendRequests = this.user.pendingRequests
+            let userPendingRequests = this.$props.currentUser.pendingRequests
+            
+            if(!userFriends.includes(id) && !profileFriendRequests.includes(userID) && !userPendingRequests.includes(id)){
+                userPendingRequests.push(id)
+                profileFriendRequests.push(userID)
+                await this.db.collection(this.dbName.users).doc('user-key'+userID).update({pendingRequests: userPendingRequests})
+                await this.db.collection(this.dbName.users).doc('user-key'+id).update({friendRequests: profileFriendRequests})
+            }else if(request.length > 0 && request !== 'add' && request !== 'respond'){
+                let userObj
+                let profileObj
+                let userIndex
+                let profileIndex
+                switch(request) {
+                    case 'cancel':
+                        userObj = {pendingRequests: userPendingRequests}
+                        userIndex = userObj.pendingRequests.indexOf(id)
+                        if (userIndex > -1) {
+                            userObj.pendingRequests.splice(userIndex, 1)
+                        }
+                        profileObj = {friendRequests: this.user.friendRequests}
+                        profileIndex = profileObj.friendRequests.indexOf(userID)
+                        if (profileIndex > -1) {
+                            profileObj.friendRequests.splice(profileIndex, 1)
+                        }
+                    break                 
+                    case 'unfriend':
+                        userObj = {friends: userFriends}
+                        userIndex = userObj.friends.indexOf(id)
+                        if (userIndex > -1) {
+                            userObj.friends.splice(userIndex, 1)
+                        }
+                        profileObj = {friends: this.user.friends}
+                        profileIndex = profileObj.friends.indexOf(userID)
+                        if (profileIndex > -1) {
+                            profileObj.friends.splice(profileIndex, 1)
+                        }
+                    break
+                }           
+                
+                if (userIndex > -1) {                    
+                    console.log(request,profileIndex,userID)
+                    //Remove from user data                    
+                    await this.db.collection(this.dbName.users).doc('user-key'+userID).update(userObj)
+                    await this.db.collection(this.dbName.users).doc('user-key'+id).update(profileObj)
+                }
+            }else{
+                this.toggleRespond = true
+            }
+
+            setTimeout(() => {
+                this.friendbtnLoading = false
+                this.checkIfProfileIsFriend(id)
+            },1500)
+        },
+        async requestRespond(id,type){
+            this.friendbtnLoading = true
+            let userID = this.$props.currentUser.id
+            let userFriendRequests = this.$props.currentUser.friendRequests
+            let userFriends = this.$props.currentUser.friends
+            let profileFriends = this.user.friends
+            let profilePendingRequest = this.user.pendingRequests
+            let userIndex
+            let profileIndex
+
+            let userObj = {friendRequests: userFriendRequests}
+            userIndex = userObj.friendRequests.indexOf(id)
+            if (userIndex > -1) {
+                userObj.friendRequests.splice(userIndex, 1)
+            }
+            
+            let profileObj = {pendingRequests: profilePendingRequest}
+            profileIndex = profileObj.pendingRequests.indexOf(userID)
+            if (profileIndex > -1) {
+                profileObj.pendingRequests.splice(profileIndex, 1)
+            }
+            if(type == 'accept'){
+                //save friends
+                userFriends.push(id)
+                await this.db.collection(this.dbName.users).doc('user-key'+userID).update({friends: userFriends})
+                profileFriends.push(userID)
+                await this.db.collection(this.dbName.users).doc('user-key'+id).update({friends: profileFriends})
+            }
+            
+            //Remove from user data                    
+            await this.db.collection(this.dbName.users).doc('user-key'+userID).update(userObj)
+            await this.db.collection(this.dbName.users).doc('user-key'+id).update(profileObj)       
+            this.toggleRespond = false
+            
+            setTimeout(() => {
+                this.friendbtnLoading = false
+                this.checkIfProfileIsFriend(id) 
+            },2500)
+        },
+        checkIfProfileIsFriend(id){
+            let userID = this.$props.currentUser.id
+            let userFriends = this.$props.currentUser.friends
+            let havePendingRequest = this.$props.currentUser.pendingRequests
+            let profileHaveRequest = this.user.pendingRequests
+            let isFriends = (userFriends.indexOf(id) > -1) ? true : false
+
+            if(this.request !== 'cancel'){
+                if(isFriends){
+                    this.notificationBTN = true
+                    this.request = 'unfriend'
+                    this.friendRequestLabel = 'Friends'
+                    this.friendRequestIcon = 'fas fa-user-friends'
+                }else if((havePendingRequest.indexOf(id) > -1) ? true : false){
+                    this.request = 'cancel'
+                    this.friendRequestLabel = 'Cancel Request'
+                    this.friendRequestIcon = 'fas fa-user-times'
+                }else if((profileHaveRequest.indexOf(userID) > -1) ? true : false){
+                    this.request = 'respond'
+                    this.friendRequestLabel = 'Respond'
+                    this.friendRequestIcon = 'fas fa-user-check'
+                }else{
+                    this.request = 'add'
+                    this.friendRequestLabel = 'Add Friend'
+                    this.friendRequestIcon = 'fas fa-user-plus'
+                }
+            }else{
+                this.request = 'add'
+                this.friendRequestLabel = 'Add Friend'
+                this.friendRequestIcon = 'fas fa-user-plus'
+            }
+
+            this.$emit('updateUserInfo')
+        },        
+        changeFriendsButtonLabel(action) {
+            if(this.friendRequestLabel === 'Unfriend' && action === 'leave'){
+                this.friendRequestLabel = 'Friends'
+                this.friendRequestIcon = 'fas fa-user-friends'
+            }else{
+                this.friendRequestLabel = 'Unfriend'
+                this.friendRequestIcon = 'fas fa-user-times'
+            }
         }
     },
     created() {
@@ -260,17 +435,17 @@ export default {
     watch: {
         link(val) {            
             if(val === 'profile' || this.$route.query.u){
-                this.transition = true
                 this.checkIfUserIsViewing()
                 this.setUserPost()
-                this.setUserLikes()
+                this.setUserLikes()                
+                this.transition = true
             }
         },
         dummyUser() {
-            this.transition = true
             this.checkIfUserIsViewing()
             this.setUserPost()
-            this.setUserLikes()
+            this.setUserLikes()            
+            this.transition = true
         }
     }
 }
@@ -279,4 +454,25 @@ export default {
 <style scoped lang="sass">
 .u-profile-avatar, .u-profile-action, .u-edit-profile
     margin-top: -5rem
+
+.u-btn-friend-request-wrap 
+    display: inline-flex
+    position: relative
+    vertical-align: middle
+    height: 38px
+
+.u-btn-respond-wrap
+    position: absolute
+    top: 2.5rem
+    left: 0
+    text-align: left
+    width: 180px
+    z-index: 1
+    padding: 5px .4rem
+    border-radius: 5px
+    background-color: $grey-1  
+    border: 1px solid $grey-4
+
+.u-btn-respond-wrap button
+    width: 100% 
 </style>
