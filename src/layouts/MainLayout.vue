@@ -146,6 +146,7 @@ export default {
           totalFollowers: 0,
           following: [],
           totalFollowing: 0,
+          usersNotify: [],
           notifications: [],
           replies: [],
           likes: []
@@ -170,6 +171,7 @@ export default {
           totalFollowers: 0,
           following: [],
           totalFollowing: 0,
+          usersNotify: [],
           notifications: [],
           replies: [],
           likes: []
@@ -194,6 +196,7 @@ export default {
           totalFollowers: 0,
           following: [],
           totalFollowing: 0,
+          usersNotify: [],
           notifications: [],
           replies: [],
           likes: []
@@ -218,6 +221,7 @@ export default {
           totalFollowers: 0,
           following: [],
           totalFollowing: 0,
+          usersNotify: [],
           notifications: [],
           replies: [],
           likes: []
@@ -242,6 +246,7 @@ export default {
           totalFollowers: 0,
           following: [],
           totalFollowing: 0,
+          usersNotify: [],
           notifications: [],
           replies: [],
           likes: []
@@ -266,6 +271,7 @@ export default {
           totalFollowers: 0,
           following: [],
           totalFollowing: 0,
+          usersNotify: [],
           notifications: [],
           replies: [],
           likes: []
@@ -292,9 +298,8 @@ export default {
         this.link = ''
       }
     },
-    changeProfilePage() {
-        this.link = 'profile?='+this.$route.query.u
-        console.log(this.link)
+    changeProfilePage(link) {
+        this.link = (link) ? link : 'profile?='+this.$route.query.u
     },
     async setUsers() { 
         this.staticUser.map(user => {

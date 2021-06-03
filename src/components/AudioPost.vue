@@ -6,8 +6,13 @@
                     <img :src="post.data.user.avatar">
                 </q-avatar>
                 <div class="u-user-name-handle col-7">
-                    <router-link class="text-subtitle2 text-bold text-primary" :to="'/profile?u='+post.data.user.handle.substring(1)">{{post.data.user.name}}</router-link>
+                    <router-link class="text-subtitle2 text-bold text-primary" :to="'/profile?u='+post.data.user.handle.substring(1)" v-slot="{navigate}">
+                        <span class="q-mr-xs q-ml-sm cursor-pointer" @click="navigate">{{post.data.user.name}}</span>
+                    </router-link>
                     <div class="text-subtitle2 text-grey-8 text-weight-regular">{{post.data.user.handle}}</div>
+                    <div class="block u-post-viewer-wrap text-primary text-weight-regular text-caption">
+                        <q-btn flat rounded size=".65rem" no-caps color="primary" :icon="post.data.viewer.icon" :label="post.data.viewer.text+' can view'" />
+                    </div>
                 </div>
                 <div class="text-subtitle2 text-grey col-3 u-post-date text-right">
                     {{ post.data.date | niceDate }}
@@ -24,8 +29,8 @@
                 :closeBTN="false"
             />
             <div class="u-post-mentioned">
-                <router-link :to="'profile?u='+user.handle.substring(1)" v-for="(user, index) in post.data.mentionedUsers" :key="index">
-                <q-chip class="q-mt-md q-mb-none" @click="this.$emit('changeProfilePage')">
+                <router-link :to="'profile?u='+user.handle.substring(1)" v-for="(user, index) in post.data.mentionedUsers" :key="index" v-slot="{navigate}">
+                <q-chip class="q-mt-md q-mb-none" @click="this.$emit('changeProfilePage'),navigate">
                     <q-avatar>
                         <img :src="user.avatar">
                     </q-avatar>
@@ -60,11 +65,11 @@
             </div>
         </div>
     </div>
-    <div v-else-if="loading" style="margin:7rem auto; width:20%; text-align:center;">
+    <div v-else-if="loading" style="margin:7rem auto; width:20%; text-align:center;">        
         <q-spinner
-            color="primary"
-            size="3rem"
-            :thickness="3"
+            :thickness="5"
+            color="grey-3"
+            size="2.5rem"
         />
     </div>
     <div v-else class="q-py-lg q-mb-md text-center text-grey-5">
@@ -162,12 +167,13 @@ export default {
     div.u-audio-post-box div.u-audio-player
         width: 85%
         margin-left: auto
+        margin-top: 15px
 
     div.u-user-name-handle
         display: inline-flex
         flex-wrap: wrap
         position: relative
-        top: 30px
+        top: 25px
 
     div.u-user-name-handle a:first-child
         margin: 0 5px 0 10px
@@ -186,7 +192,7 @@ export default {
 
     div.u-post-date
         position: relative
-        top: 30px
+        top: 25px
 
     button.u-like-react:hover
         color: $red-5!important
@@ -196,4 +202,9 @@ export default {
 
     button.u-repost:hover
         color: $green-5!important
+
+    div.u-post-viewer-wrap
+        position: absolute
+        top: 25px
+        left: 10px
 </style>

@@ -3,8 +3,8 @@
     <div class="u-post-box row">
       <div class="col-12">
           <div class="u-msgbox-comp">   
-              <router-link :to="'/profile?u='+handle">          
-                <q-avatar class="q-ml-md">
+              <router-link :to="'/profile?u='+handle" v-slot="{navigate}">          
+                <q-avatar class="q-ml-md" @click="navigate">
                   <img :src="currentUser.avatar">
                 </q-avatar>
               </router-link>
@@ -65,7 +65,7 @@
               />
               <q-card  v-show="postMentionWrap" flat bordered class="post-mention-card absolute q-my-md q-mr-lg">
                 <q-card-section class="q-pt-none">
-                  <q-input v-model="searchMentionUser" @input="pushMentionOption" label="Search" />
+                  <q-input autofocus v-model="searchMentionUser" @input="pushMentionOption" label="Search" />
                 </q-card-section>
                 <q-card-section v-show="searchMentionUser" class="q-pt-sm">
                   <div class="q-gutter-sm">
@@ -94,7 +94,7 @@
             />
             <q-card  v-show="postViewerWrap" flat bordered class="post-viewer-card absolute q-my-md q-mr-lg">
                 <q-card-section>
-                  <span class="text-subtitle2">Who can reply?</span>
+                  <span class="text-subtitle2">Who can view?</span>
                   <div class="text-caption text-grey-7">
                     Choose who can reply to this Post. Anyone mentioned can always reply.
                   </div>
@@ -434,6 +434,7 @@ export default {
   },
   created() {      
     this.db.config.debug = false
+    this.fetchPost()
   },
   watch: {    
       currentUser() {

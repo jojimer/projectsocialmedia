@@ -52,7 +52,16 @@
         <q-card-section v-else class="u-profile-action">
             <div class="q-px-md q-gutter-sm text-right ">
                 <q-btn round outline color="primary" icon="fas fa-ellipsis-h" />
-                <q-btn v-show="notificationBTN" round outline color="primary" icon="notification_add" />
+                <q-btn
+                    v-show="notificationBTN"
+                    @click="toggleNotification(user.id)"
+                    color="primary"
+                    :icon="notified ? 'notifications_active':'notification_add'"
+                    :outline="!notified"
+                    :loading="notificationBTNLoading"
+                    unelevated
+                    round
+                />
                 <div class="u-btn-friend-request-wrap">
                     <q-btn
                         @click="toggleFriendButton(user.id,request)"
@@ -79,7 +88,26 @@
                         <q-btn color="primary" flat align="left" label="decline" @click="requestRespond(user.id,'decline')" />
                     </div>
                 </div>
-                <q-btn rounded outline no-wrap color="primary" no-caps label="Listen" />
+                <q-btn
+                    @click="toggleFollow(user.id,user.followers,user.totalFollowers)"
+                    color="primary"
+                    no-caps
+                    no-wrap
+                    :outline="!following"
+                    rounded
+                    :unelevated="following"
+                    :loading="followBTNLoading"
+                    @mouseenter="followLabel ='Unlisten'"
+                    @mouseleave="followLabel = 'Listening'"
+                >
+                    <template slot="default">
+                        <span class="block" style="padding:4px 16px 3px;">{{!following ? 'Listen' : followLabel}}</span>
+                    </template>
+                    <template slot="loading">
+                        <q-spinner :color="!following ? 'primary' : 'white'" size="1.4rem" :thickness="5" />
+                        <span class="q-ml-sm">{{!following ? 'Listen' : followLabel}}</span>
+                    </template>
+                </q-btn>
             </div>
         </q-card-section>
         <q-card-section class="u-profile-name-handle">
@@ -102,9 +130,11 @@
             </div>
             <div>
                 <div class="text-subtitle2">
-                    <span class="q-ml-md text-weight-bolder">0</span>
+                    <span class="q-ml-md text-weight-bolder">{{user.totalFriends}}</span>
+                    <span class="q-ml-xs text-weight-regular text-grey-7">{{user.totalFriends > 1 ? 'Friends' : 'Friend'}}</span>
+                    <span class="q-ml-md text-weight-bolder">{{user.totalFollowing}}</span>
                     <span class="q-ml-xs text-weight-regular text-grey-7">Listening</span>
-                    <span class="q-ml-md text-weight-bolder">0</span>
+                    <span class="q-ml-md text-weight-bolder">{{user.totalFollowers}}</span>
                     <span class="q-ml-xs text-weight-regular text-grey-7">Listeners</span>
                 </div>
             </div>
@@ -121,7 +151,7 @@
                     <q-tab class="q-py-sm" name="posts" label="Posts" />
                     <q-tab class="q-py-sm" name="replies" label="Post & Replies" />
                     <q-tab class="q-py-sm" name="likes" label="Likes" />
-                    <q-tab class="q-py-sm" name="friends" label="Friends" />
+                    <q-tab v-show="user.totalFriends > 0" class="q-py-sm" name="friends" label="Friends" />
                 </q-tabs>
                 <q-separator />
                 <div class="q-gutter-y-xs">
@@ -154,8 +184,11 @@
                             />
                         </q-tab-panel>
 
-                        <q-tab-panel name="friends">
-                            <div class="text-center text-grey-5 q-py-lg q-mb-md"><h6 class="text-weight-regular">No friends available!</h6></div>
+                        <q-tab-panel name="friends" class="q-pa-none">
+                            <div class="q-py-sm">
+                                <Friendlist v-if="user.totalFriends > 0" :friends="user.friends" @changeProfilePage="(link) => this.$emit('changeProfilePage', link)" />
+                                <h6 class="text-weight-regular text-center text-grey-5 q-py-sm q-mb-md" v-else>No friends available!</h6>
+                            </div>
                         </q-tab-panel>
                     </q-tab-panels>
                 </div>
@@ -167,6 +200,7 @@
 <script>
 import ProfileLightbox from '../components/Profile/ProfileLightbox'
 import AudioPost from '../components/AudioPost'
+import Friendlist from '../components/Friends/FriendList'
 export default {
     data() {
         return {
@@ -178,6 +212,9 @@ export default {
             user: {
                 
             },
+            following: false,
+            followLabel: 'Listening',
+            followBTNLoading: false,
             request: 'respond',
             friendRequestLabel: 'Add friend',
             friendRequestIcon: 'fas fa-user-plus',
@@ -187,6 +224,8 @@ export default {
             userReplies: [],
             userFriends: [],
             userLikes: [],
+            notified: false,
+            notificationBTNLoading: false,
             transition: false,
             lightbox: false
         }
@@ -198,11 +237,13 @@ export default {
     },
     components: {
         AudioPost,
-        ProfileLightbox
+        ProfileLightbox,
+        Friendlist
     },
     methods: {
         checkIfUserIsViewing(){
             let handle = '@'+this.$route.query.u
+            this.tab = 'posts'
             this.userIsViewing = handle === this.$props.currentUser.handle
             if(this.userIsViewing){
                 this.user = this.$props.currentUser
@@ -288,7 +329,7 @@ export default {
             let profileFriendRequests = this.user.pendingRequests
             let userPendingRequests = this.$props.currentUser.pendingRequests
             
-            if(!userFriends.includes(id) && !profileFriendRequests.includes(userID) && !userPendingRequests.includes(id)){
+            if(request !== 'unfriend' && !profileFriendRequests.includes(userID) && !userPendingRequests.includes(id)){
                 userPendingRequests.push(id)
                 profileFriendRequests.push(userID)
                 await this.db.collection(this.dbName.users).doc('user-key'+userID).update({pendingRequests: userPendingRequests})
@@ -297,7 +338,7 @@ export default {
                 let userObj
                 let profileObj
                 let userIndex
-                let profileIndex
+                let profileIndex                
                 switch(request) {
                     case 'cancel':
                         userObj = {pendingRequests: userPendingRequests}
@@ -312,18 +353,22 @@ export default {
                         }
                     break                 
                     case 'unfriend':
-                        userObj = {friends: userFriends}
-                        userIndex = userObj.friends.indexOf(id)
+                        let userTotalFriends = this.$props.currentUser.totalFriends
+                        let profileTotalFriends = this.user.totalFriends
+                            userTotalFriends =  userTotalFriends > 0 ? userTotalFriends-1 : 0                    
+                            profileTotalFriends = profileTotalFriends > 0 ? profileTotalFriends-1 : 0
+                        userObj = {friends: userFriends, totalFriends: userTotalFriends}
+                        userIndex = userObj.friends.map((friend) => friend.id).indexOf(id)
                         if (userIndex > -1) {
                             userObj.friends.splice(userIndex, 1)
                         }
-                        profileObj = {friends: this.user.friends}
-                        profileIndex = profileObj.friends.indexOf(userID)
+                        profileObj = {friends: this.user.friends, totalFriends: profileTotalFriends}
+                        profileIndex = profileObj.friends.map((friend) => friend.id).indexOf(userID)
                         if (profileIndex > -1) {
                             profileObj.friends.splice(profileIndex, 1)
                         }
                     break
-                }           
+                }
                 
                 if (userIndex > -1) {                    
                     console.log(request,profileIndex,userID)
@@ -345,8 +390,10 @@ export default {
             let userID = this.$props.currentUser.id
             let userFriendRequests = this.$props.currentUser.friendRequests
             let userFriends = this.$props.currentUser.friends
+            let userTotalFriends = this.$props.currentUser.totalFriends
             let profileFriends = this.user.friends
             let profilePendingRequest = this.user.pendingRequests
+            let profileTotalFriends = this.user.totalFriends
             let userIndex
             let profileIndex
 
@@ -363,15 +410,22 @@ export default {
             }
             if(type == 'accept'){
                 //save friends
-                userFriends.push(id)
-                await this.db.collection(this.dbName.users).doc('user-key'+userID).update({friends: userFriends})
-                profileFriends.push(userID)
-                await this.db.collection(this.dbName.users).doc('user-key'+id).update({friends: profileFriends})
+                userFriends.push({id:id,name:this.user.name})
+                userFriends.sort((a, b) => (a.name > b.name) ? 1 : -1)
+                userTotalFriends = userTotalFriends+1
+                await this.db.collection(this.dbName.users).doc('user-key'+userID).update({friends: userFriends, totalFriends: userTotalFriends})
+                profileFriends.push({id:userID,name:this.$props.currentUser.name})
+                profileFriends.sort((a, b) => (a.name > b.name) ? 1 : -1)
+                profileTotalFriends = profileTotalFriends+1
+                await this.db.collection(this.dbName.users).doc('user-key'+id).update({friends: profileFriends, totalFriends: profileTotalFriends})
+                this.user.totalFriends = this.user.totalFriends+1
+            }else{
+                this.user.totalFriends = this.user.totalFriends-1
             }
             
             //Remove from user data                    
             await this.db.collection(this.dbName.users).doc('user-key'+userID).update(userObj)
-            await this.db.collection(this.dbName.users).doc('user-key'+id).update(profileObj)       
+            await this.db.collection(this.dbName.users).doc('user-key'+id).update(profileObj)
             this.toggleRespond = false
             
             setTimeout(() => {
@@ -384,7 +438,8 @@ export default {
             let userFriends = this.$props.currentUser.friends
             let havePendingRequest = this.$props.currentUser.pendingRequests
             let profileHaveRequest = this.user.pendingRequests
-            let isFriends = (userFriends.indexOf(id) > -1) ? true : false
+            let checkIndex = userFriends.map((friend) => friend.id).indexOf(id)
+            let isFriends = (checkIndex > -1) ? true : false
 
             if(this.request !== 'cancel'){
                 if(isFriends){
@@ -421,6 +476,83 @@ export default {
                 this.friendRequestLabel = 'Unfriend'
                 this.friendRequestIcon = 'fas fa-user-times'
             }
+        },
+        async toggleFollow(id,followers,tnFollowers){
+            this.followBTNLoading = true
+            let userID = this.$props.currentUser.id
+            let userFollowing = this.$props.currentUser.following
+            let totalFollowers
+            let totalFollowing
+            
+            if(!userFollowing.includes(id) && !followers.includes(userID)){                
+                followers.push(userID)
+                totalFollowers = tnFollowers+1
+                userFollowing.push(id)
+                totalFollowing = this.$props.currentUser.totalFollowing+1
+                await this.db.collection(this.dbName.users).doc('user-key'+id).update({followers: followers,totalFollowers: totalFollowers})
+                await this.db.collection(this.dbName.users).doc('user-key'+userID).update({following: userFollowing,totalFollowing: totalFollowing})
+                this.followLabel = 'Listening'
+            }else{                
+                let followersIndex = followers.indexOf(userID)
+                let followingIndex = userFollowing.indexOf(id)
+                if (followersIndex > -1 && followingIndex > -1) {
+                    //Remove followers from profile
+                    followers.splice(followersIndex, 1)
+                    totalFollowers = tnFollowers !== 0 ? tnFollowers-1 : 0
+                    await this.db.collection(this.dbName.users).doc('user-key'+id).update({followers: followers,totalFollowers: totalFollowers})
+                    //Remove following to user data
+                    userFollowing.splice(followingIndex, 1)                    
+                    totalFollowing = this.$props.currentUser.totalFollowing !== 0 ? this.$props.currentUser.totalFollowing-1 : 0
+                    await this.db.collection(this.dbName.users).doc('user-key'+userID).update({following: userFollowing,totalFollowing: totalFollowing})
+                }
+            }
+            setTimeout(() => {
+                this.followBTNLoading = false
+                this.checkIfUserFollowTheProfile()
+                this.user.totalFollowers = totalFollowers
+            },1500)
+        },
+        checkIfUserFollowTheProfile(){
+            let id = this.user.id
+            let userFollowing = this.$props.currentUser.following
+            const following = userFollowing.indexOf(id)
+            this.following = (following > -1) ? true : false
+            this.notificationBTN = this.following ? true : false
+        },
+        async toggleNotification(id){
+            this.notificationBTNLoading = true
+            let userID = this.$props.currentUser.id
+            let userNotice = this.$props.currentUser.usersNotify
+            
+            if(!userNotice.includes(id)){
+                userNotice.push(id)
+                await this.db.collection(this.dbName.users).doc('user-key'+userID).update({usersNotify: userNotice})
+            }else{
+                let noticeIndex = userNotice.indexOf(id)
+                if (noticeIndex > -1) {
+                    //Remove notification bell to user data
+                    userNotice.splice(noticeIndex, 1)
+                    await this.db.collection(this.dbName.users).doc('user-key'+userID).update({usersNotify: userNotice})
+                }
+            }
+            setTimeout(() => {
+                this.notificationBTNLoading = false
+                this.checkIfUserNotification()
+            },1500)
+        },
+        checkIfUserNotification(){
+            let id = this.user.id
+            let userNotice = this.$props.currentUser.usersNotify
+            const notificationIndex = userNotice.indexOf(id)
+            this.notified = (notificationIndex > -1) ? true : false
+        },
+        initProfilePage(){
+            this.checkIfUserIsViewing()
+            this.setUserPost()
+            this.setUserLikes()  
+            this.checkIfUserFollowTheProfile()
+            this.checkIfUserNotification()
+            this.transition = true
         }
     },
     created() {
@@ -433,19 +565,13 @@ export default {
         this.setUserLikes()
     },
     watch: {
-        link(val) {            
+        link(val) {      
             if(val === 'profile' || this.$route.query.u){
-                this.checkIfUserIsViewing()
-                this.setUserPost()
-                this.setUserLikes()                
-                this.transition = true
+                this.initProfilePage()
             }
         },
         dummyUser() {
-            this.checkIfUserIsViewing()
-            this.setUserPost()
-            this.setUserLikes()            
-            this.transition = true
+            this.initProfilePage()
         }
     }
 }
