@@ -73,6 +73,7 @@
                         rounded
                         unelevated
                         :loading="friendbtnLoading"
+                        :disable="friendbtnLoading"
                     >
                         <template slot="default">
                             <q-icon :name="friendRequestIcon" />
@@ -162,6 +163,7 @@
                                 :users="dummyUser"
                                 :userID="currentUser.id"
                                 :userLikes="currentUser.likes"
+                                @changeProfilePage="(link) => this.$emit('changeProfilePage', link)"
                             />
                         </q-tab-panel>
 
@@ -171,7 +173,7 @@
                                 :users="dummyUser"
                                 :userID="currentUser.id"
                                 :userLikes="currentUser.likes"
-                                @changeProfilePage="this.$emit('changeProfilePage')"
+                                @changeProfilePage="(link) => this.$emit('changeProfilePage', link)"
                             />
                         </q-tab-panel>
 
@@ -181,6 +183,7 @@
                                 :users="dummyUser"
                                 :userID="currentUser.id"
                                 :userLikes="currentUser.likes"
+                                @changeProfilePage="(link) => this.$emit('changeProfilePage', link)"
                             />
                         </q-tab-panel>
 
@@ -213,6 +216,7 @@ export default {
                 
             },
             following: false,
+            friends: true,
             followLabel: 'Listening',
             followBTNLoading: false,
             request: 'respond',
@@ -326,14 +330,19 @@ export default {
             if(request !== 'respond') this.friendbtnLoading = true
             let userID = this.$props.currentUser.id
             let userFriends = this.$props.currentUser.friends
+            let profileFriends = this.user.friends
             let profileFriendRequests = this.user.pendingRequests
             let userPendingRequests = this.$props.currentUser.pendingRequests
             
-            if(request !== 'unfriend' && !profileFriendRequests.includes(userID) && !userPendingRequests.includes(id)){
+            if(request !== 'unfriend' && request === 'add' && !profileFriends.includes(userID) && !userPendingRequests.includes(id)){
                 userPendingRequests.push(id)
                 profileFriendRequests.push(userID)
                 await this.db.collection(this.dbName.users).doc('user-key'+userID).update({pendingRequests: userPendingRequests})
                 await this.db.collection(this.dbName.users).doc('user-key'+id).update({friendRequests: profileFriendRequests})
+                setTimeout(() => {
+                    this.checkIfProfileIsFriend(id)
+                    this.friendbtnLoading = false
+                },1500)
             }else if(request.length > 0 && request !== 'add' && request !== 'respond'){
                 let userObj
                 let profileObj
@@ -370,20 +379,18 @@ export default {
                     break
                 }
                 
-                if (userIndex > -1) {                    
-                    console.log(request,profileIndex,userID)
+                if (userIndex > -1) {
                     //Remove from user data                    
                     await this.db.collection(this.dbName.users).doc('user-key'+userID).update(userObj)
-                    await this.db.collection(this.dbName.users).doc('user-key'+id).update(profileObj)
+                    await this.db.collection(this.dbName.users).doc('user-key'+id).update(profileObj)                   
+
+                    setTimeout(() => {
+                        this.checkIfProfileIsFriend(id)
+                    },1500)
                 }
             }else{
                 this.toggleRespond = true
             }
-
-            setTimeout(() => {
-                this.friendbtnLoading = false
-                this.checkIfProfileIsFriend(id)
-            },1500)
         },
         async requestRespond(id,type){
             this.friendbtnLoading = true
@@ -429,7 +436,6 @@ export default {
             this.toggleRespond = false
             
             setTimeout(() => {
-                this.friendbtnLoading = false
                 this.checkIfProfileIsFriend(id) 
             },2500)
         },
@@ -440,6 +446,7 @@ export default {
             let profileHaveRequest = this.user.pendingRequests
             let checkIndex = userFriends.map((friend) => friend.id).indexOf(id)
             let isFriends = (checkIndex > -1) ? true : false
+            this.friends = isFriends
 
             if(this.request !== 'cancel'){
                 if(isFriends){
@@ -451,6 +458,7 @@ export default {
                     this.request = 'cancel'
                     this.friendRequestLabel = 'Cancel Request'
                     this.friendRequestIcon = 'fas fa-user-times'
+                    this.notificationBTN = (this.following) ? true : false
                 }else if((profileHaveRequest.indexOf(userID) > -1) ? true : false){
                     this.request = 'respond'
                     this.friendRequestLabel = 'Respond'
@@ -466,7 +474,8 @@ export default {
                 this.friendRequestIcon = 'fas fa-user-plus'
             }
 
-            this.$emit('updateUserInfo')
+            this.$emit('updateUserInfo')            
+            this.friendbtnLoading = false
         },        
         changeFriendsButtonLabel(action) {
             if(this.friendRequestLabel === 'Unfriend' && action === 'leave'){

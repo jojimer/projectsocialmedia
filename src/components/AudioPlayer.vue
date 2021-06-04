@@ -1,5 +1,5 @@
 <template>
-    <div class="u-audio-player q-pa-sm q-ml-md q-mr-lg" :style="!closeBTN ? 'border-radius:1rem' : ''">
+    <div class="u-audio-player q-pa-sm q-ml-md q-mr-lg" :style="!closeBTN ? 'border-radius:1rem' : ''">        
         <audio :id="'audioPlayer'+uniqueID" class="hidden" :src="AudioSRC" controls preload="auto"></audio>
         <div class="u-audio-player-wrap">
             <q-icon v-show="closeBTN" class="u-close-player" size="1.25rem" name="fas fa-times-circle" color="red-5" @click="$emit('close-player',false)" />
@@ -178,4 +178,5 @@
     span.u-volume-wrap
         display: flex
         min-width: 120px
+    
 </style>

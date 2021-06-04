@@ -1,5 +1,5 @@
 <template>
-<div class="col">
+<div class="col">    
     <q-btn
         :loading="loading"
         :percentage="percentage"
@@ -67,5 +67,5 @@ export default{
         width: 100%
         background-color: #17645D
         color: white    
-    
+
 </style>

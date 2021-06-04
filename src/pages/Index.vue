@@ -1,22 +1,37 @@
 <template>
   <q-page>
     <div class="u-post-box row">
-      <div class="col-12">
-          <div class="u-msgbox-comp">   
+      <div class="col-12">          
+          <div class="u-msgbox-comp"> 
               <router-link :to="'/profile?u='+handle" v-slot="{navigate}">          
-                <q-avatar class="q-ml-md" @click="navigate">
+                <q-avatar class="q-ml-md cursor-pointer" @click="navigate">
                   <img :src="currentUser.avatar">
                 </q-avatar>
               </router-link>
-              <AudioPlayer
-                v-if="audioPlayer"
-                :uniqueID="'audioPostPlayback'"
-                :AudioSRC="AudioSRC"
-                :maxLength="maxLength"
-                :closeBTN="true"
-                :audioDuration="(duration) => audioDuration = duration"
-                @close-player="resetRecording"
-              />
+              <div v-if="audioPlayer" class="u-caption-player-wrap">
+                <div class="u-caption-box">
+                  <q-input
+                    v-model="postCaption"                    
+                    outlined
+                    dense
+                    stack-label
+                    hide-bottom-space
+                    type="textarea"
+                    counter
+                    maxlength="250"
+                    placeholder="Write something . . ."
+                    style="padding-top:28px;"
+                  />
+                </div>          
+                <AudioPlayer
+                  :uniqueID="'audioPostPlayback'"
+                  :AudioSRC="AudioSRC"
+                  :maxLength="maxLength"
+                  :closeBTN="true"
+                  :audioDuration="(duration) => audioDuration = duration"
+                  @close-player="resetRecording"
+                />
+              </div>
               <div v-else class="u-message-box q-px-md">                
                   <InActiveBox
                     v-if="!recordingState"
@@ -138,6 +153,7 @@
       :users="dummyUser"
       :userID="currentUser.id"
       :userLikes="currentUser.likes"
+      @changeProfilePage="(link) => this.$emit('changeProfilePage', link)"
     />
 
   </q-page>
@@ -208,6 +224,7 @@ export default {
       mentionOption: [],
       audioPost: [],      
       realPost: [],
+      postCaption: '',
       posting: false,
       db: new this.$localbase('db'),
       dbName: this.$databaseName
@@ -295,7 +312,8 @@ export default {
       this.postMentionWrap = false
       this.postViewerWrap = false
       const reset = () => {
-        this.audioPlayer = false
+        this.audioPlayer = false        
+        this.postCaption = ''
         this.currentTime = 0
         this.indexDummyUser = this.$props.dummyUser
         this.mentionedUser = []      
@@ -417,6 +435,7 @@ export default {
           handle: this.currentUser.handle,
           avatar: this.currentUser.avatar
         },
+        postCaption: this.postCaption,
         likes: [],
         audioSRC: this.AudioSRC,
         audioBLOB: this.AudioBlob,
@@ -433,7 +452,8 @@ export default {
     },    
   },
   created() {      
-    this.db.config.debug = false
+    this.db.config.debug = false    
+    this.handle = this.$props.currentUser.handle.substring(1)
     this.fetchPost()
   },
   watch: {    
@@ -493,4 +513,12 @@ export default {
     width: 280px
     z-index: 1
 
+  div.u-caption-box
+    width: 98%
+    margin-left: 20px
+    margin-bottom: 10px
+
+  div.u-caption-player-wrap
+    width: 85%
+    margin-right: auto
 </style>

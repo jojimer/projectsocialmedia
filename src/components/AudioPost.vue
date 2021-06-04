@@ -22,6 +22,7 @@
                     {{post.viewer.text+' can reply'}}
                 </div> -->
             </div>
+            <p class="u-post-caption text-grey-8" v-show="post.data.postCaption">{{post.data.postCaption}}</p>
             <AudioPlayer
                 :uniqueID="'userIndex'+index"
                 :AudioSRC="getAudioSource(post.data.audioBLOB)"
@@ -29,25 +30,28 @@
                 :closeBTN="false"
             />
             <div class="u-post-mentioned">
-                <router-link :to="'profile?u='+user.handle.substring(1)" v-for="(user, index) in post.data.mentionedUsers" :key="index" v-slot="{navigate}">
-                <q-chip class="q-mt-md q-mb-none" @click="this.$emit('changeProfilePage'),navigate">
-                    <q-avatar>
-                        <img :src="user.avatar">
-                    </q-avatar>
-                    {{user.handle}}
+                <q-chip class="q-mt-md q-mb-none" v-for="(user, index) in post.data.mentionedUsers" :key="index">
+                    <div class="cursor-pointer" @click="changeProfilePage('profile?u=',user.handle.substring(1))">
+                        <q-avatar>
+                            <img :src="user.avatar">
+                        </q-avatar>
+                        {{user.handle}}
+                    </div>
                 </q-chip>
-                </router-link>
             </div>
-            <div class="u-post-action q-mt-lg">
+            <div class="u-post-action q-mt-xl">
                 <q-btn-group flat spread>
                     <q-btn
                         @click="toggleLikes(post.key,post.data.likes)"
                         class="q-py-sm u-like-react"
-                        :color="checkIfUSerLikeThePost(post.key) ? 'red-5' : 'grey-5'"
-                        :icon="checkIfUSerLikeThePost(post.key) ? 'fas fa-heart' : 'far fa-heart'"
+                        :color="checkIfUSerLikeThePost(post.key) ? 'amber-13' : 'grey-5'"                        
                         :label="post.data.likes.length > 0 ? post.data.likes.length : ''"
                         flat
-                    />
+                    >
+                        <template slot="default">
+                            <img :class="checkIfUSerLikeThePost(post.key) ? 'u-dug-it' : 'dig-it'" src="icons/dig_it.png" style="height: 35px;" class="q-mx-sm" />                       
+                            <span class="u-dig-it-tooltip">{{checkIfUSerLikeThePost(post.key) ? 'Undig?' : 'Dig it!'}}</span></template>
+                    </q-btn>
                     <q-btn
                         class="q-py-sm u-comment"
                         color="grey-5"
@@ -132,6 +136,10 @@ export default {
             let userlikes = this.$props.userLikes
             const rpostKey = userlikes.indexOf(key)
             return (rpostKey > -1) ? true : false
+        },
+        changeProfilePage(link,handle) {
+            this.$router.push('profile?u='+handle)
+            this.$emit('changeProfilePage',link+handle)
         }
     },
     created() {
@@ -164,8 +172,15 @@ export default {
         background-color: white
         border-top: .5px solid $grey-3
 
+    p.u-post-caption
+        width: 90%
+        margin-left: auto
+        margin-right: 20px
+        margin-top: 10px
+        padding: 5px
+
     div.u-audio-post-box div.u-audio-player
-        width: 85%
+        width: 90%
         margin-left: auto
         margin-top: 15px
 
@@ -195,13 +210,38 @@ export default {
         top: 25px
 
     button.u-like-react:hover
-        color: $red-5!important
+        color: $amber!important
 
     button.u-comment:hover
         color: $primary!important
 
     button.u-repost:hover
         color: $green-5!important
+
+    img.dig-it
+        opacity: .4
+
+    button.u-like-react:hover img.dig-it
+        opacity: 1
+
+    img.u-dug-it
+        opacity: 1
+
+    span.u-dig-it-tooltip
+        font-size: 8px!important
+        font-weight: 700
+        margin-top: -20px
+        margin-left: 90px
+        background-color: $grey-9!important
+        padding: 0px 8px
+        border-radius: 10px
+        color: white
+        visibility: hidden
+        position: absolute
+        text-transform: capitalize
+
+    button.u-like-react:hover span.u-dig-it-tooltip
+        visibility: visible
 
     div.u-post-viewer-wrap
         position: absolute

@@ -100,7 +100,19 @@ div.u-editor-wrap .q-img__image
     transform: translateY(0%)
     top: 0
 
-.u-input-bio > div > div:last-child
+.u-input-bio > div > div:last-child, .u-caption-box .q-textarea > div > div:last-child
+    transform: translateY(0%)
     position: absolute
     top: 0
     right: 0
+
+.u-caption-box .q-textarea .q-field__control-container
+    padding-top: 12px
+    overflow-y: hidden
+
+.u-caption-box .q-textarea .q-field__control-container textarea
+    max-height: 100px!important
+    min-height: 100px!important
+    margin-bottom: -12px!important
+    text-align: justify
+    padding: 10px 5px

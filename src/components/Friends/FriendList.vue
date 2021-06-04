@@ -4,7 +4,7 @@
             <h6 class="q-ma-none q-pl-sm text-center text-weight-bold text-black" @click="friendsPagination">Friends</h6>
         </div>
         <div class="col-5 q-px-md">
-            <q-input rounded outlined v-model="searchName" bg-color="grey-2" dense label="Search" >
+            <q-input rounded outlined v-model="searchName" bg-color="grey-2" @input="filterFriends" dense label="Search" >
                 <template v-slot:prepend>
                     <q-icon name="search" />
                 </template>
@@ -45,6 +45,7 @@ export default{
             dbName: this.$databaseName,
             friendsList: [],
             friendsInQueue: [],
+            loadedFriends: [],
             allFriends: this.$props.friends.length,
             loading: false,
             searchName: '',
@@ -58,11 +59,14 @@ export default{
     },
     methods: {
         getFriendsList(friends) {
-            friends.map(friend => {
-                this.db.collection(this.dbName.users).doc(friend).get().then(friend => {
+            friends.map((friend, index) => {
+                this.db.collection(this.dbName.users).doc((friend)).get().then(friend => {
                     this.friendsList.push(friend)
+                    if(this.allFriends-1 === index){
+                        this.loading = false
+                    }
                 })
-            })
+            })            
         },
         friendsPagination() {
             this.loading = true
@@ -72,12 +76,36 @@ export default{
                     if(this.friendsInQueue[this.pagination]) setFriends.push(this.friendsInQueue[this.pagination])
                 }
                 this.limit = this.limit + this.paginationStep
-                setTimeout(() => {
-                    this.getFriendsList(setFriends)
-                },1500)       
+                this.getFriendsList(setFriends) 
             }else{
                 window.removeEventListener('scroll', this.friendsPagination)
                 this.loading = false
+            }
+        },
+        filterFriends() {
+            let search = this.searchName
+            this.loading = true 
+            let filteredFriends
+            this.pagination = 0
+            this.limit = 2
+            this.paginationStep = 2
+            this.friendsList = []
+            if(search){                
+                filteredFriends = this.$props.friends.filter(friend => {
+                    if(friend.name.toLowerCase().indexOf(search.toLowerCase()) !== -1){
+                        return friend
+                    }
+                })
+                
+                this.allFriends = filteredFriends.length
+                this.friendsInQueue = filteredFriends                
+                this.getFriendsList(filteredFriends)
+                console.log(search, this.friendsInQueue)
+            }else{
+                this.friendsInQueue = this.$props.friends
+                this.allFriends = this.friendsInQueue.length                
+                this.friendsPagination()
+                window.addEventListener('scroll', this.friendsPagination)
             }
         },
         changeProfilePage(link,handle) {
@@ -86,7 +114,7 @@ export default{
         }
     },
     created() {        
-        this.friendsInQueue = this.$props.friends
+        this.friendsInQueue = this.$props.friends        
         window.addEventListener('scroll', this.friendsPagination)
         this.friendsPagination()
     },
